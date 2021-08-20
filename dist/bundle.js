@@ -53,26 +53,27 @@
         return 8;
       if (tick < 100)
         return 12;
+      if (tick < 150)
+        return 8;
       if (tick < 200)
-        return 16;
+        return 12;
       if (tick < 250)
-        return 20;
+        return 8;
       if (tick < 300)
-        return 24;
+        return 16;
       if (tick < 350)
-        return 28;
+        return 24;
       if (tick < 400)
         return 32;
       if (tick < 450)
-        return 36;
-      if (tick < 500)
-        return 40;
-      if (tick < 600)
         return 44;
+      if (tick < 500)
+        return 48;
       return 52;
     };
     const myStar = base.position[0] === 2600 ? star_a1c : star_zxq;
     const enemyStar = base.position[0] === 2600 ? star_zxq : star_a1c;
+    const myNexusPos = calcAveragePos(myStar.position, base.position);
     const myAliveSpirits = my_spirits.filter((s) => s.hp);
     const enemyAliveSpirits = Object.keys(spirits).reduce((acc, id) => {
       const s = spirits[id];
@@ -124,10 +125,42 @@
       }
     };
     const moveWithStrategy = (spirit) => {
-      const defendPoint = outpost.position;
-      const seedX = Math.floor(Math.random() * 100) - 100;
-      const seedY = Math.floor(Math.random() * 100) - 100;
+      const enemyControlsOutpost = outpost.control ? outpost.control.indexOf("Carsair") < 0 : false;
+      outpost.range = outpost.range || 400;
+      if (enemyControlsOutpost && calcDistance(spirit.position, outpost.position) < outpost.range + 10) {
+        spirit.move(calcRunAwayPoint(spirit, outpost));
+        return;
+      }
+      if (spirit.energy < spirit.energy_capacity) {
+        gatherClosestStar(spirit);
+        return;
+      }
+      let defendPoint;
+      if (parseInt(spirit.id.split("_")[1]) % 2 == 0) {
+        defendPoint = calcAveragePos(base.position, [enemy_base.position[0], enemy_base.position[1]]);
+      } else {
+        defendPoint = calcAveragePos(base.position, [enemyStar.position[0], enemyStar.position[1]]);
+      }
+      const seedX = Math.floor(Math.random() * 100) - 50;
+      const seedY = Math.floor(Math.random() * 100) - 50;
       spirit.move([defendPoint[0] + seedX, defendPoint[1] + seedY]);
+    };
+    const gatherClosestStar = (spirit) => {
+      let closestDist = null;
+      const availableStar = [myStar, enemyStar].reduce((acc, star) => {
+        const dist = calcDistance(spirit.position, star.position);
+        if (closestDist == null || dist < closestDist) {
+          closestDist = dist;
+          acc = star;
+        }
+        return acc;
+      }, null);
+      if (calcDistance(availableStar.position, spirit.position) > 200) {
+        spirit.move(availableStar.position);
+      } else {
+        if (availableStar.energy > desiredStarEnergy)
+          spirit.energize(spirit);
+      }
     };
     const fightBasic = (spirit) => {
       let isFighting = false;
@@ -158,18 +191,26 @@
       return isFighting;
     };
     const main = () => {
-      const potentialGatherSpirits = myAliveSpirits.filter((s) => s.energy_capacity == 10);
+      let potentialGatherSpiritsClose = [];
+      let potentialGatherSpiritsFar = [];
+      myAliveSpirits.forEach((s) => {
+        if (calcDistance(myNexusPos, s.position) < 500)
+          potentialGatherSpiritsClose.push(s);
+        else
+          potentialGatherSpiritsFar.push(s);
+      });
+      potentialGatherSpiritsFar.sort((spiritA, spiritB) => calcDistance(spiritB.position, myNexusPos) - calcDistance(spiritA.position, myNexusPos));
+      const potentialGatherSpirits = [...potentialGatherSpiritsClose, ...potentialGatherSpiritsFar];
       const gatherSpirits = potentialGatherSpirits.slice(0, MAX_GATHERERS);
       const leftoverSpirits = potentialGatherSpirits.slice(MAX_GATHERERS);
-      var potenialBigSpirits = myAliveSpirits.filter((s) => s.energy_capacity > 10);
       for (let idx = 0; idx < gatherSpirits.length; idx++) {
-        var spirit = gatherSpirits[idx];
+        const spirit = gatherSpirits[idx];
         gather2(spirit, idx);
         fightBasic(spirit);
       }
-      var fightingSpirits = [...potenialBigSpirits, ...leftoverSpirits];
+      const fightingSpirits = [...leftoverSpirits];
       for (let idx = 0; idx < fightingSpirits.length; idx++) {
-        var spirit = fightingSpirits[idx];
+        const spirit = fightingSpirits[idx];
         moveWithStrategy(spirit);
         fightAggressive(spirit);
       }
