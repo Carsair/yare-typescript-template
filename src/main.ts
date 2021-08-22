@@ -1,3 +1,6 @@
+import count from './utils'
+import Geometry from './geometry'
+
 try {
 
   ///
@@ -23,7 +26,7 @@ try {
     return Math.sqrt(Math.pow(a[0] - b[0], 2) + Math.pow(a[1] - b[1], 2))
   }
 
-  const calcRunAwayPoint = (a: Spirit, entityToRunFrom: Entity) => {
+  const calcRunAwayPoint = (a: Entity, entityToRunFrom: Entity) => {
     return [a.position[0] + a.position[0] - entityToRunFrom.position[0], a.position[1] + a.position[1] - entityToRunFrom.position[1]] as Position
   }
 
@@ -75,15 +78,16 @@ try {
   ///
 
   const getGatherMax = () => {
-    if (tick < 50) return 8
+    return 4
+    if (tick < 50) return 12
     if (tick < 100) return 12
-    if (tick < 150) return 8
+    if (tick < 150) return 12
     if (tick < 200) return 12
-    if (tick < 250) return 8
-    if (tick < 300) return 16
-    if (tick < 350) return 24
-    if (tick < 400) return 32
-    if (tick < 450) return 44
+    if (tick < 250) return 12
+    if (tick < 300) return 12
+    if (tick < 350) return 12
+    if (tick < 400) return 12
+    if (tick < 450) return 40
     if (tick < 500) return 48
     return 52
   }
@@ -103,6 +107,18 @@ try {
     if (s.hp && s.id.indexOf('Carsair') < 0) acc.push(s)
     return acc
   }, [] as Spirit[])
+  const playerTotalEnergies = Object.keys(spirits).reduce((acc, id) => {
+    const s = spirits[id];
+      if (!s.hp) return acc
+    if (s.id.indexOf("Carsair") >= 0) {
+      acc[0] += s.energy
+    } else {
+      acc[1] += s.energy
+    }
+    return acc
+  }, [0, 0])
+
+
   const MAX_GATHERERS = Math.min(getGatherMax(), 4 * Math.round(myStar.energy * .01 + 3))
   const plannedEnergyObj = {}
   const desiredStarEnergy = Math.min(974, Math.pow(tick, 1.35))
@@ -113,6 +129,7 @@ try {
   console.log("We have", my_spirits.length, myAliveSpirits.length, "(alive)", MAX_GATHERERS, "(gather)")
   console.log("Enemy has", Object.keys(spirits).length - my_spirits.length, enemyAliveSpirits.length, "(alive)")
   console.log("Planning for tick, star: ", tick, desiredStarEnergy)
+  console.log("Planning for energies: us:", playerTotalEnergies[0], " them: ", playerTotalEnergies[1])
 
   ///
 
@@ -165,26 +182,26 @@ try {
     // If we control the outpost, normal moves, perhaps energize it
     // If enemy controls the outpost, avoid the range if we're too close
     // Eventuallly do maybe a sum of friend/enemy energy within outpost range
-    const enemyControlsOutpost = outpost.control ? outpost.control.indexOf("Carsair") < 0 : false;
-    outpost.range = outpost.range || 400; //typescript making me out 400 because ?range
-    if (enemyControlsOutpost && calcDistance(spirit.position, outpost.position) <  outpost.range + 10) {
-      spirit.move(calcRunAwayPoint(spirit, outpost))
-      return
-    }
+    // const enemyControlsOutpost = true//outpost.control ? outpost.control.indexOf("Carsair") < 0 : false;
+    // const outpostRange = 200; //typescript making me out 400 because ?range
+    // if (enemyControlsOutpost && calcDistance(spirit.position, outpost.position) <  outpostRange + 20) {
+    //   spirit.move(calcRunAwayPoint(spirit, outpost))
+    //   return
+    // }
+
     if (spirit.energy < spirit.energy_capacity) {
       gatherClosestStar(spirit)
       return
     }
     let defendPoint;
-    if (parseInt(spirit.id.split('_')[1]) % 2 == 0) {
-      defendPoint = calcAveragePos(base.position, [enemy_base.position[0], enemy_base.position[1]])
-    } else {
-      defendPoint = calcAveragePos(base.position, [enemyStar.position[0], enemyStar.position[1]])
-    }
+    defendPoint = Geometry.calcTangentPointFromPoint(spirit, outpost, 200)
+    if (parseInt(spirit.id.split('_')[1]) % 2 == 1) defendPoint = Geometry.calcClockwiseTangentPointFromPoint(spirit, outpost, 200)
 
-    const seedX = Math.floor(Math.random() * 100) - 50
-    const seedY = Math.floor(Math.random() * 100) - 50
-    spirit.move([defendPoint[0]+seedX, defendPoint[1]+seedY]);
+    if (Array.isArray(defendPoint)) {
+      const seedX = 0//Math.floor(Math.random() * 100) - 50
+      const seedY = 0//Math.floor(Math.random() * 100) - 50
+      spirit.move([defendPoint[0]+seedX, defendPoint[1]+seedY]);
+    }
   }
 
   const gatherClosestStar = (spirit: Spirit) => {
@@ -202,7 +219,7 @@ try {
     if (calcDistance(availableStar.position, spirit.position) > 200) {
       spirit.move(availableStar.position)
     } else {
-      if (availableStar.energy > desiredStarEnergy) spirit.energize(spirit)
+      if (availableStar.energy > desiredStarEnergy/2) spirit.energize(spirit)
     }
   }
 
@@ -218,8 +235,11 @@ try {
       const spiritEnemiesBeamable = spirit.sight.enemies_beamable.map((s: string) => spirits[s])
       const {closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe} = calcClosestSpirit(spiritEnemiesBeamable, spirit)
       if (closestEnemyToMe) {
+        isFighting = true
         spirit.energize(closestEnemyToMe)
-        if (closestDistanceToMe < 200) spirit.move(calcRunAwayPoint(spirit, closestEnemyToMe))
+        if (closestDistanceToMe < 200) {
+          spirit.move(calcRunAwayPoint(spirit, closestEnemyToMe))
+        }
       }
     }
     return isFighting;
@@ -237,6 +257,45 @@ try {
       }
     }
     return isFighting;
+  }
+
+  const fightSmart = (spirit: Spirit) => {
+    // let isFighting = fightBasic(spirit);
+    // if (isFighting) return;
+    let isFighting;
+
+    if (spirit.sight.enemies_beamable.length > 0) {
+      const spiritEnemiesBeamable = spirit.sight.enemies_beamable.map((s) => spirits[s]);
+      const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = calcClosestSpirit(spiritEnemiesBeamable, spirit);
+      if (closestEnemyToMe) {
+        spirit.energize(closestEnemyToMe);
+        if (closestDistanceToMe < 200)
+          spirit.move(calcRunAwayPoint(spirit, closestEnemyToMe));
+      }
+    } else if (spirit.sight.enemies) {
+      const spiritEnemiesNearby = spirit.sight.enemies.map((s) => spirits[s]);
+      const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = calcClosestSpirit(spiritEnemiesNearby, spirit);
+      if (closestEnemyToMe) {
+        if (closestEnemyToMe.energy > spirit.energy && calcDistance(closestEnemyToMe.position, base.position) > 400) {
+          spirit.move(calcRunAwayPoint(spirit, closestEnemyToMe))
+        } else if (closestDistanceToMe < 200) {
+          spirit.move(calcRunAwayPoint(spirit, closestEnemyToMe))
+        } else {
+          spirit.move(closestEnemyToMe.position)
+        }
+      }
+    }
+    return isFighting;
+  }
+
+  const fightToWin = (spirit: Spirit) => {
+    if (false) {
+      // if (tick >= 300) {
+      //   defendPoint = enemy_base.position
+      // }
+      spirit.move(enemy_base.position)
+      spirit.energize(enemy_base)
+    }
   }
 
   // ///
@@ -290,7 +349,8 @@ try {
     for (let idx = 0; idx < fightingSpirits.length; idx++) {
       const spirit = fightingSpirits[idx]
       moveWithStrategy(spirit)
-      fightAggressive(spirit)
+      // fightSmart(spirit)
+      // fightToWin(spirit)
     }
   }
   main()
