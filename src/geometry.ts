@@ -5,6 +5,14 @@ const Geometry = {
   calcRunAwayPoint: (a: Entity, entityToRunFrom: Entity) => {
     return [a.position[0] + a.position[0] - entityToRunFrom.position[0], a.position[1] + a.position[1] - entityToRunFrom.position[1]] as Position
   },
+  calcAveragePos: (...posArr: Position[]) => {
+    let x = 0, y = 0;
+    for (const pos in posArr) {
+      x = x + posArr[pos][0]
+      y = y + posArr[pos][1]
+    }
+    return [x / posArr.length, y / posArr.length] as Position
+  },
   // Move counterclockwise around the avoidEntity
   calcTangentPointFromPoint: (spirit: Entity, avoidEntity: Entity, radius: number) => {
     const d = Geometry.calcDistance(spirit.position, avoidEntity.position)
@@ -26,10 +34,6 @@ const Geometry = {
     const angle3 = angle2 - angle1
     const tanDelX = flipperX * alpha * Math.sin(angle3)
     const tanDelY = flipperY * alpha * Math.cos(angle3)
-    if ((spirit as any).shout && spirit.id == "Carsair_13") {
-      (spirit as any).shout(orientation, tanDelX, tanDelY)
-      console.log("Regular: ", tanDelX, tanDelY);
-    }
     const tangentPoint = [x1 + tanDelX, y1 + tanDelY].map(Math.round)
     return tangentPoint
   },
@@ -53,7 +57,6 @@ const Geometry = {
     const angle3 = angle2 - angle1
     const tanDelX = flipperY * alpha * Math.cos(angle3)
     const tanDelY = flipperX * alpha * Math.sin(angle3)
-    console.log("Clockwise: ", tanDelX, tanDelY);
     const tangentPoint = [x1 + tanDelX, y1 + tanDelY].map(Math.round)
     return tangentPoint
   }

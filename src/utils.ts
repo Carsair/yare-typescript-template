@@ -1,5 +1,5 @@
 export default {
-  count: (s: Spirit) => {
-    return s.energy
+  shout: (spirit: Spirit, message: string) => {
+    spirit.shout(('' + message).substring(0, 20))
   }
 }
