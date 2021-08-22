@@ -100,7 +100,7 @@ try {
 
   const MAX_GATHERERS = Math.min(getGatherMax(), 4 * Math.round(myStar.energy * .01 + 3))
   const plannedEnergyObj = {}
-  const desiredStarEnergy = Math.min(974, Math.pow(tick, 1.35))
+  const desiredStarEnergy = Math.min(974, Math.pow(tick, 1.3))//Math.min(974, Math.pow(tick, 1.35))
   // const lineReserveCapacity = Math.min(8, Math.round(tick/10))
   console.log("Base: ", base.position)
   console.log("myStar: ", myStar.position)
@@ -124,7 +124,7 @@ try {
       const connection = myAliveSpirits[idx - 2]
       if (connection &&
         connection.energy <= connection.energy_capacity - 1 &&
-        spirit.energy == spirit.energy_capacity) {
+        (tick < 50 || spirit.energy == spirit.energy_capacity)) {
         spirit.energize(connection)
       }
     } else if (idx % 4 == 2) {
@@ -167,7 +167,6 @@ try {
     //   spirit.move(calcRunAwayPoint(spirit, outpost))
     //   return
     // }
-
     if (spirit.energy < spirit.energy_capacity) {
       gatherClosestStar(spirit)
       return
@@ -222,7 +221,17 @@ try {
   }
 
   const fightForTheBase = (spirit: Spirit) => {
-
+    console.log(base.sight.enemies)
+    if (base.sight.enemies.length > 0) {
+      const baseEnemies = spirit.sight.enemies.map((s) => spirits[s]);
+      const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = calcClosestSpirit(baseEnemies, spirit);
+      if (closestEnemyToMe) {
+        if (closestDistanceToMe > 200) {
+          spirit.move(closestEnemyToMe.position);
+        }
+        spirit.energize(closestEnemyToMe)
+      }
+    }
   }
 
   const fightAggressive = (spirit: Spirit) => {
@@ -250,7 +259,6 @@ try {
       const spiritEnemiesNearby = spirit.sight.enemies.map((s) => spirits[s]);
       const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = calcClosestSpirit(spiritEnemiesNearby, spirit);
       if (closestEnemyToMe) {
-        console.log('closestEnemyToMe: ', closestEnemyToMe.energy);
         if (closestEnemyToMe.energy/closestEnemyToMe.energy_capacity > spirit.energy/spirit.energy_capacity && Geometry.calcDistance(closestEnemyToMe.position, base.position) > 400) {
           spirit.move(Geometry.calcRunAwayPoint(spirit, closestEnemyToMe))
         } else if (closestDistanceToMe < 200) {
@@ -263,11 +271,6 @@ try {
   }
 
   const fightToWin = (spirit: Spirit) => {
-    if (spirit.id == "Carsair_130") {
-      Utils.shout(spirit, spirit.id);
-      console.log("structs", spirit.sight.structures);
-      console.log("enemies_beamable", spirit.sight.enemies_beamable);
-    }
     const enemyStructs = spirit.sight.structures.filter((s) => s.indexOf("Carsair") < 0 && s.indexOf("base") >= 0)
     if (enemyStructs.length > 0) {
       spirit.energize(enemy_base)
@@ -319,6 +322,7 @@ try {
     for (let idx = 0; idx < gatherSpirits.length; idx++) {
       const spirit = gatherSpirits[idx]
       gather2(spirit, idx)
+      fightForTheBase(spirit)
       fightBasic(spirit)
     }
     const fightingSpirits = [...leftoverSpirits]
