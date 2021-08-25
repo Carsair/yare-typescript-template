@@ -137,7 +137,7 @@ try {
 
   // ///
 
-  const gather1 = (spirit: Spirit) => {
+  const gatherHauling = (spirit: Spirit) => {
     const baseStructs = spirit.sight.structures.filter((s) => s.indexOf(base.id) >= 0)
     const starStructBeamable = Geometry.calcDistance(spirit.position, myStar.position) <= 200
     if (baseStructs.length > 0 && base.energy < base.energy_capacity) {
@@ -161,8 +161,8 @@ try {
     }
   }
 
-  const gather3 = (spirit: Spirit, idx: number) => {
-    const DUMP_UNTIL = 90
+  const gatherChain = (spirit: Spirit, idx: number) => {
+    const DUMP_UNTIL = 900
     const safeEnergy = tick > DUMP_UNTIL ? 8 : 0
     const baseStructs = spirit.sight.structures.filter((s) => s.indexOf(base.id) >= 0)
     if (baseStructs.length > 0 && spirit.energy > 0 && spirit.energy >= safeEnergy) {
@@ -226,48 +226,6 @@ try {
         spirit.energy > 0) {
         spirit.energize(connection)
         connection.energy += spirit.size
-      }
-    }
-  }
-
-  var gather2 = (spirit: Spirit, idx: number) => {
-    const DUMP_UNTIL = 1050
-    if (idx % 4 == 3) {
-      const closeToStar = Geometry.calcAveragePos(myStar.position, myStar.position, myStar.position, base.position)
-      spirit.move(closeToStar)
-      if (myStar.energy > desiredStarEnergy) spirit.energize(spirit)
-      const connection = myAliveSpirits[idx - 2]
-      if (connection &&
-        connection.energy <= connection.energy_capacity - 1 &&
-        (tick < DUMP_UNTIL || spirit.energy == spirit.energy_capacity)) {
-        spirit.energize(connection)
-      }
-    } else if (idx % 4 == 2) {
-      const closeToBase = Geometry.calcAveragePos(base.position, base.position, base.position, myStar.position)
-      spirit.move(closeToBase)
-      if (base.energy < base.energy_capacity &&
-        (tick < DUMP_UNTIL || spirit.energy >= spirit.energy_capacity - 1) &&
-        true) {
-        spirit.energize(base)
-      }
-    } else if (idx % 4 == 1) {
-      const middlePoint = Geometry.calcAveragePos(base.position, myStar.position)
-      spirit.move(middlePoint)
-      const connection = myAliveSpirits[idx + 1]
-      if (connection &&
-        connection.energy < connection.energy_capacity &&
-        (tick < DUMP_UNTIL || spirit.energy >= spirit.energy_capacity - 1)) {
-        spirit.energize(myAliveSpirits[idx + 1])
-      }
-    } else {
-      const closeToStar = Geometry.calcAveragePos(myStar.position, myStar.position, myStar.position, base.position)
-      spirit.move(closeToStar)
-      if (myStar.energy > desiredStarEnergy) spirit.energize(spirit)
-      const connection = myAliveSpirits[idx + 1]
-      if (connection &&
-        connection.energy <= connection.energy_capacity &&
-        (tick < DUMP_UNTIL || spirit.energy == spirit.energy_capacity)) {
-        spirit.energize(connection)
       }
     }
   }
@@ -503,7 +461,7 @@ try {
 
 
       // Prod strategy
-      tick < 20 ? gather1(spirit) : gather3(spirit, idx)
+      tick < 20 ? gatherHauling(spirit) : gatherChain(spirit, idx)
       fightForTheBase(spirit)
       fightBasic(spirit)
     }

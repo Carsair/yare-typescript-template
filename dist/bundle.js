@@ -151,7 +151,7 @@
     console.log("Enemy has", Object.keys(spirits).length - my_spirits.length, enemyAliveSpirits.length, "(alive)");
     console.log("Planning for tick, star: ", tick, desiredStarEnergy);
     console.log("Planning for energies: us:", playerTotalEnergies[0], " them: ", playerTotalEnergies[1]);
-    const gather1 = (spirit) => {
+    const gatherHauling = (spirit) => {
       const baseStructs = spirit.sight.structures.filter((s) => s.indexOf(base.id) >= 0);
       const starStructBeamable = geometry_default.calcDistance(spirit.position, myStar.position) <= 200;
       if (baseStructs.length > 0 && base.energy < base.energy_capacity) {
@@ -172,8 +172,8 @@
         spirit.move(myStar.position);
       }
     };
-    const gather3 = (spirit, idx) => {
-      const DUMP_UNTIL = 90;
+    const gatherChain = (spirit, idx) => {
+      const DUMP_UNTIL = 900;
       const safeEnergy = tick > DUMP_UNTIL ? 8 : 0;
       const baseStructs = spirit.sight.structures.filter((s) => s.indexOf(base.id) >= 0);
       if (baseStructs.length > 0 && spirit.energy > 0 && spirit.energy >= safeEnergy) {
@@ -223,41 +223,6 @@
         if (connection && isBeamable && connection.energy < connection.energy_capacity && spirit.energy > 0) {
           spirit.energize(connection);
           connection.energy += spirit.size;
-        }
-      }
-    };
-    gather2 = (spirit, idx) => {
-      const DUMP_UNTIL = 1050;
-      if (idx % 4 == 3) {
-        const closeToStar = geometry_default.calcAveragePos(myStar.position, myStar.position, myStar.position, base.position);
-        spirit.move(closeToStar);
-        if (myStar.energy > desiredStarEnergy)
-          spirit.energize(spirit);
-        const connection = myAliveSpirits[idx - 2];
-        if (connection && connection.energy <= connection.energy_capacity - 1 && (tick < DUMP_UNTIL || spirit.energy == spirit.energy_capacity)) {
-          spirit.energize(connection);
-        }
-      } else if (idx % 4 == 2) {
-        const closeToBase = geometry_default.calcAveragePos(base.position, base.position, base.position, myStar.position);
-        spirit.move(closeToBase);
-        if (base.energy < base.energy_capacity && (tick < DUMP_UNTIL || spirit.energy >= spirit.energy_capacity - 1) && true) {
-          spirit.energize(base);
-        }
-      } else if (idx % 4 == 1) {
-        const middlePoint = geometry_default.calcAveragePos(base.position, myStar.position);
-        spirit.move(middlePoint);
-        const connection = myAliveSpirits[idx + 1];
-        if (connection && connection.energy < connection.energy_capacity && (tick < DUMP_UNTIL || spirit.energy >= spirit.energy_capacity - 1)) {
-          spirit.energize(myAliveSpirits[idx + 1]);
-        }
-      } else {
-        const closeToStar = geometry_default.calcAveragePos(myStar.position, myStar.position, myStar.position, base.position);
-        spirit.move(closeToStar);
-        if (myStar.energy > desiredStarEnergy)
-          spirit.energize(spirit);
-        const connection = myAliveSpirits[idx + 1];
-        if (connection && connection.energy <= connection.energy_capacity && (tick < DUMP_UNTIL || spirit.energy == spirit.energy_capacity)) {
-          spirit.energize(connection);
         }
       }
     };
@@ -410,7 +375,7 @@
       const leftoverSpirits = potentialGatherSpirits.slice(MAX_GATHERERS);
       for (let idx = 0; idx < gatherSpirits.length; idx++) {
         const spirit = gatherSpirits[idx];
-        tick < 20 ? gather1(spirit) : gather3(spirit, idx);
+        tick < 20 ? gatherHauling(spirit) : gatherChain(spirit, idx);
         fightForTheBase(spirit);
         fightBasic(spirit);
       }
@@ -423,5 +388,4 @@
   } catch (e) {
     console.log(e.message);
   }
-  var gather2;
 })();
