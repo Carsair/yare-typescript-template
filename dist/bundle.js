@@ -117,11 +117,12 @@
         return [null, null];
       }
     };
-    const getGatherMax = () => {
-      return 52;
+    const getMaxGather = () => {
+      return 152;
     };
-    const myStar = base.position[0] === 2600 ? star_a1c : star_zxq;
-    const enemyStar = base.position[0] === 2600 ? star_zxq : star_a1c;
+    const isSouthSpawn = base.position[0] === 2600;
+    const myStar = isSouthSpawn ? star_a1c : star_zxq;
+    const enemyStar = isSouthSpawn ? star_zxq : star_a1c;
     const myNexusPos = geometry_default.calcAveragePos(myStar.position, base.position);
     const myAliveSpirits = my_spirits.filter((s) => s.hp);
     const enemyAliveSpirits = Object.keys(spirits).reduce((acc, id) => {
@@ -141,7 +142,7 @@
       }
       return acc;
     }, [0, 0]);
-    const MAX_GATHERERS = getGatherMax();
+    const MAX_GATHERERS = getMaxGather();
     const plannedEnergyObj = {};
     const desiredStarEnergy = Math.min(970, Math.pow(tick, 1.25));
     console.log("Base: ", base.position);
@@ -151,13 +152,17 @@
     console.log("Enemy has", Object.keys(spirits).length - my_spirits.length, enemyAliveSpirits.length, "(alive)");
     console.log("Planning for tick, star: ", tick, desiredStarEnergy);
     console.log("Planning for energies: us:", playerTotalEnergies[0], " them: ", playerTotalEnergies[1]);
+    const CLOSE_TO_STAR_POS = geometry_default.calcAveragePos(myStar.position, myStar.position, myStar.position, base.position);
+    const CLOSE_TO_BASE_POS = geometry_default.calcAveragePos(base.position, base.position, base.position, myStar.position);
+    const MIDDLE_POINT_POS = geometry_default.calcAveragePos(base.position, myStar.position);
+    const NEW_SPAWN_POS = isSouthSpawn ? [2620, 1760] : [1580, 640];
     const gatherHauling = (spirit) => {
       const baseStructs = spirit.sight.structures.filter((s) => s.indexOf(base.id) >= 0);
-      const starStructBeamable = geometry_default.calcDistance(spirit.position, myStar.position) <= 200;
+      const isStarBeamable = geometry_default.calcDistance(spirit.position, myStar.position) <= 200;
       if (baseStructs.length > 0 && base.energy < base.energy_capacity) {
         spirit.energize(base);
         spirit.energy -= spirit.size;
-      } else if (starStructBeamable && myStar.energy > desiredStarEnergy) {
+      } else if (isStarBeamable && myStar.energy > desiredStarEnergy) {
         spirit.energize(spirit);
         spirit.energy += spirit.size;
       }
@@ -168,23 +173,72 @@
       }
       if (baseStructs.length == 0 && spirit.mark == "full") {
         spirit.move(base.position);
-      } else if (!starStructBeamable && spirit.mark == "empty") {
+      } else if (!isStarBeamable && spirit.mark == "empty") {
         spirit.move(myStar.position);
       }
     };
-    const gatherChain = (spirit, idx) => {
-      const DUMP_UNTIL = 900;
-      const safeEnergy = tick > DUMP_UNTIL ? 8 : 0;
-      const baseStructs = spirit.sight.structures.filter((s) => s.indexOf(base.id) >= 0);
-      if (baseStructs.length > 0 && spirit.energy > 0 && spirit.energy >= safeEnergy) {
-        if (geometry_default.calcDistance(spirit.position, base.position) > 200) {
-          spirit.move(base.position);
-        } else {
+    const gatherBase = (spiritArr) => {
+      const safeEnergy = 0;
+      spiritArr.forEach((spirit) => {
+        const isBaseBeamable = spirit.sight.structures.filter((s) => s == base.id).length > 0;
+        spirit.move(CLOSE_TO_BASE_POS);
+        if (isBaseBeamable && base.energy < base.energy_capacity && spirit.energy > 0 && spirit.energy >= safeEnergy) {
           spirit.energize(base);
+          spirit.energy -= spirit.size;
+          base.energy += spirit.size;
         }
-      } else if (idx % 4 == 3) {
-        const closeToStar = geometry_default.calcAveragePos(myStar.position, myStar.position, myStar.position, base.position);
-        spirit.move(closeToStar);
+      });
+    };
+    const gatherChainHauling = (spiritArr, connectionArr) => {
+      const safeEnergy = 0;
+      spiritArr.forEach((spirit) => {
+        const isStarBeamable = geometry_default.calcDistance(spirit.position, myStar.position) <= 200;
+        const isBaseBeamable = spirit.sight.structures.find((s) => s.indexOf(base.id) >= 0);
+        const connection = connectionArr.sort((a, b) => b.energy - a.energy).find((s) => {
+          if (spirit.sight.friends_beamable.find((s2) => s2 == s.id) && s.energy < s.energy_capacity) {
+            return true;
+          }
+        });
+        if (isBaseBeamable) {
+          spirit.energize(base);
+          spirit.energy -= spirit.size;
+          base.energy += spirit.size;
+        } else if (connection) {
+          spirit.energize(connection);
+          spirit.energy -= spirit.size;
+          connection.energy += spirit.size;
+        } else if (isStarBeamable && myStar.energy > desiredStarEnergy) {
+          spirit.energize(spirit);
+          myStar.energy -= spirit.size;
+          spirit.energy += spirit.size;
+        }
+        if (spirit.energy == spirit.energy_capacity) {
+          spirit.set_mark("full");
+        } else if (spirit.energy == 0) {
+          spirit.set_mark("empty");
+        } else if (!spirit.mark) {
+          spirit.set_mark("empty");
+        }
+        if (!isBaseBeamable && !connection && spirit.mark == "full") {
+          spirit.move(CLOSE_TO_BASE_POS);
+        } else if (!isStarBeamable && spirit.mark == "empty") {
+          spirit.move(myStar.position);
+        }
+      });
+    };
+    const gatherStar = (spiritArr, connectionArr) => {
+      spiritArr.forEach((spirit) => {
+        spirit.move(CLOSE_TO_STAR_POS);
+        if (myStar.energy > desiredStarEnergy && spirit.energy < spirit.energy_capacity) {
+          spirit.energize(spirit);
+        }
+      });
+    };
+    const gatherChain = (spirit, idx) => {
+      const DUMP_UNTIL = 111900;
+      const safeEnergy = tick > DUMP_UNTIL ? 8 : 0;
+      if (idx % 4 == 3) {
+        spirit.move(CLOSE_TO_STAR_POS);
         if (myStar.energy > desiredStarEnergy && spirit.energy < spirit.energy_capacity) {
           spirit.energize(spirit);
         }
@@ -195,17 +249,15 @@
           connection.energy += spirit.size;
         }
       } else if (idx % 4 == 2) {
-        const closeToBase = geometry_default.calcAveragePos(base.position, base.position, base.position, myStar.position);
-        spirit.move(closeToBase);
+        spirit.move(CLOSE_TO_BASE_POS);
         const connection = base;
-        const isBeamable = spirit.sight.friends_beamable.filter((s) => s == connection.id).length > 0;
+        const isBeamable = spirit.sight.structures.filter((s) => s.indexOf(base.id) >= 0).length > 0;
         if (connection && isBeamable && connection.energy < connection.energy_capacity && spirit.energy > 0 && spirit.energy >= safeEnergy) {
           spirit.energize(connection);
           connection.energy += spirit.size;
         }
       } else if (idx % 4 == 1) {
-        const middlePoint = geometry_default.calcAveragePos(base.position, myStar.position);
-        spirit.move(middlePoint);
+        spirit.move(MIDDLE_POINT_POS);
         const connection = myAliveSpirits[idx + 1];
         const isBeamable = spirit.sight.friends_beamable.filter((s) => s == connection.id).length > 0;
         if (connection && isBeamable && connection.energy < connection.energy_capacity) {
@@ -213,8 +265,7 @@
           connection.energy += spirit.size;
         }
       } else {
-        const closeToStar = geometry_default.calcAveragePos(myStar.position, myStar.position, myStar.position, base.position);
-        spirit.move(closeToStar);
+        spirit.move(CLOSE_TO_STAR_POS);
         if (myStar.energy > desiredStarEnergy && spirit.energy < spirit.energy_capacity) {
           spirit.energize(spirit);
         }
@@ -225,6 +276,16 @@
           connection.energy += spirit.size;
         }
       }
+    };
+    const gatherNew = (gatherSpirits) => {
+      const firstSpirit = gatherSpirits[0];
+      firstSpirit.energize(base);
+      firstSpirit.move(NEW_SPAWN_POS);
+      const restOfSpirits = gatherSpirits.slice(1);
+      restOfSpirits.forEach((s) => {
+        s.move(NEW_SPAWN_POS);
+        s.merge && s.merge(firstSpirit);
+      });
     };
     const moveWithStrategy = (spirit) => {
       if (spirit.energy < spirit.energy_capacity) {
@@ -373,15 +434,20 @@
       const potentialGatherSpirits = [...potentialGatherSpiritsClose, ...potentialGatherSpiritsFar];
       const gatherSpirits = potentialGatherSpirits.slice(0, MAX_GATHERERS);
       const leftoverSpirits = potentialGatherSpirits.slice(MAX_GATHERERS);
+      const gatherBasers = gatherSpirits.filter((s, idx) => idx % 3 == 0);
+      const gatherHaulers = gatherSpirits.filter((s, idx) => idx % 3 > 0);
+      gatherBase(gatherBasers);
+      gatherChainHauling(gatherHaulers, gatherBasers);
       for (let idx = 0; idx < gatherSpirits.length; idx++) {
         const spirit = gatherSpirits[idx];
-        tick < 20 ? gatherHauling(spirit) : gatherChain(spirit, idx);
         fightForTheBase(spirit);
         fightBasic(spirit);
       }
       const fightingSpirits = [...leftoverSpirits];
       for (let idx = 0; idx < fightingSpirits.length; idx++) {
         const spirit = fightingSpirits[idx];
+        chargeOutpostStrategy(spirit);
+        fightForTheBase(spirit);
       }
     };
     main();
