@@ -74,9 +74,15 @@ try {
 
   const getMaxGather = () => {
     // return 4
+    // return 6
+    // return 7
     // return 8
+    // return 9
     // return 12
     // return 12
+    // return 4
+    return 52
+    // return 152
     // if (tick < 50) return 12
     // if (tick < 100) return 12
     // if (tick < 150) return 12
@@ -87,8 +93,6 @@ try {
     // if (tick < 400) return 16
     // if (tick < 450) return 40
     // if (tick < 500) return 48
-    return 152
-    // return 52
     // return Math.round((0.08 * tick + 12))
   }
 
@@ -122,7 +126,7 @@ try {
 
   const MAX_GATHERERS = getMaxGather()//Math.min(getMaxGather(), 4 * Math.round(myStar.energy * .01 + 3))
   const plannedEnergyObj = {}
-  const desiredStarEnergy = Math.min(970, Math.pow(tick, 1.25))//Math.min(974, Math.pow(tick, 1.35))
+  const desiredStarEnergy = 0 //Math.min(970, Math.pow(tick, 1.15))//Math.min(974, Math.pow(tick, 1.35))
   // const lineReserveCapacity = Math.min(8, Math.round(tick/10))
   console.log("Base: ", base.position)
   console.log("myStar: ", myStar.position)
@@ -170,7 +174,8 @@ try {
     const safeEnergy = 0
     spiritArr.forEach((spirit) => {
       const isBaseBeamable = spirit.sight.structures.filter((s) => s == base.id).length > 0
-      spirit.move(CLOSE_TO_BASE_POS)
+      spirit.move(CLOSE_TO_BASE_POS);
+      (spirit as any).hasConnection = false
       if (isBaseBeamable &&
         base.energy < base.energy_capacity &&
         spirit.energy > 0 &&
@@ -186,14 +191,16 @@ try {
 
   const gatherChainHauling = (spiritArr: Spirit[], connectionArr: Spirit[]) => {
     const safeEnergy = 0
+    spiritArr = spiritArr.sort((a, b) => a.energy - b.energy) //inverted to dump lowest first
     spiritArr.forEach((spirit) => {
       const isStarBeamable = Geometry.calcDistance(spirit.position, myStar.position) <= 200
       const isBaseBeamable = spirit.sight.structures.find((s) => s.indexOf(base.id) >= 0)
       const connection = connectionArr
-        .sort((a, b) => b.energy - a.energy)
+        .sort((a, b) => a.energy - b.energy) // inverted to energize lowest first
         .find((s) => {
         if (spirit.sight.friends_beamable.find((s2) => s2 == s.id) &&
-        s.energy < s.energy_capacity) {
+        s.energy < s.energy_capacity &&
+        (!(s as any).hasConnection)) {
           return true
         }
       })
@@ -201,14 +208,15 @@ try {
         spirit.energize(base)
         spirit.energy -= spirit.size
         base.energy += spirit.size
-      } else if (connection) {
-        spirit.energize(connection)
-        spirit.energy -= spirit.size
-        connection.energy += spirit.size
-      } else if (isStarBeamable && myStar.energy > desiredStarEnergy) {
+      } else if (isStarBeamable && myStar.energy > desiredStarEnergy && spirit.energy < spirit.energy_capacity) {
         spirit.energize(spirit)
         myStar.energy -= spirit.size
         spirit.energy += spirit.size
+      } else if (connection) {
+        spirit.energize(connection)
+        spirit.energy -= spirit.size
+        connection.energy += spirit.size;
+        // ((connection as any).hasConnection = true)
       }
 
       if (spirit.energy == spirit.energy_capacity) {
@@ -219,12 +227,12 @@ try {
         spirit.set_mark("empty")  // new spawns??
       }
 
-      if (!isBaseBeamable && !connection && spirit.mark == "full") {
+      if (!connection && spirit.mark == "full") {
         spirit.move(CLOSE_TO_BASE_POS)
       } else if (!isStarBeamable && spirit.mark == "empty") {
         spirit.move(myStar.position)
       }
-
+      spirit.shout(spirit.mark)
     })
   }
 
@@ -456,7 +464,7 @@ try {
     if (Geometry.calcDistance(availableStar.position, spirit.position) > 200) {
       spirit.move(availableStar.position)
     } else {
-      if (availableStar.energy > desiredStarEnergy/2) spirit.energize(spirit)
+      if (spirit.energy < spirit.energy_capacity && availableStar.energy > desiredStarEnergy) spirit.energize(spirit)
     }
   }
 
@@ -489,6 +497,19 @@ try {
           spirit.move(closestEnemyToMe.position);
         }
       }
+      if (spirit.energy == 0) {
+        memory[spirit.id] = memory[spirit.id] || {}
+        memory[spirit.id].status = "depleted"
+      }
+      if (memory[spirit.id] && memory[spirit.id].status == "depleted") {
+        gatherClosestStar(spirit, [myStar])
+
+        if (spirit.energy == spirit.energy_capacity) {
+          memory[spirit.id].status = ""
+        }
+      }
+    } else if (memory[spirit.id] && memory[spirit.id].status) {
+      memory[spirit.id].status = ""
     }
   }
 
@@ -575,10 +596,16 @@ try {
     const leftoverSpirits = potentialGatherSpirits.slice(MAX_GATHERERS)
 
     // gatherNew(gatherSpirits)
-    const gatherBasers = gatherSpirits.filter((s, idx) => idx % 3 == 0)
-    const gatherHaulers = gatherSpirits.filter((s, idx) => idx % 3 > 0)
-    gatherBase(gatherBasers)
-    gatherChainHauling(gatherHaulers, gatherBasers)
+    // const gatherBasers = gatherSpirits.filter((s, idx) => idx % 3 == 0)
+    // const gatherHaulers = gatherSpirits.filter((s, idx) => idx % 3 > 0)
+    const transitionTime = 0
+    if (tick >= transitionTime) {
+      const indexLimit = Math.round(gatherSpirits.length * .27)
+      const gatherBasers = gatherSpirits.slice(0, indexLimit)
+      const gatherHaulers = gatherSpirits.slice(indexLimit)
+      gatherBase(gatherBasers)
+      gatherChainHauling(gatherHaulers, gatherBasers)
+    }
 
     for (let idx = 0; idx < gatherSpirits.length; idx++) {
       const spirit = gatherSpirits[idx]
@@ -586,6 +613,7 @@ try {
       // gatherChain(spirit, idx)
 
       // Prod strategy
+      if (tick < transitionTime) gatherHauling(spirit)
       // tick < 22 ? gatherHauling(spirit) : gatherChain(spirit, idx)
       fightForTheBase(spirit)
       fightBasic(spirit)
