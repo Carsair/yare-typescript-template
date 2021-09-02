@@ -125,8 +125,8 @@
       }
     };
     const getMaxGather = () => {
+      return 24;
       return 30;
-      return 36;
       return 52;
     };
     const isSouthSpawn = base.position[0] === 2600;
@@ -448,13 +448,26 @@
         }
       }
     };
+    const moveWithBuddy = (spiritArr) => {
+      spiritArr.forEach((spirit, idx) => {
+        const sizeIdeal = 2;
+        const buddy = spiritArr[idx - 1];
+        if (spirit.size >= sizeIdeal && spirit.energy < spirit.energy_capacity) {
+          spirit.divide && spirit.divide();
+        } else if (buddy && buddy.size < sizeIdeal && spirit.energy == spirit.energy_capacity) {
+          if (geometry_default.calcDistance(spirit.position, buddy.position) > 10)
+            spirit.move(buddy.position);
+          spirit.merge && spirit.merge(buddy);
+        }
+      });
+    };
     const fightAggressive3 = (spiritArr) => {
       spiritArr.forEach((spirit, idx) => {
         const sizeIdeal = 3;
         const buddy = spiritArr[idx - 1];
         if (spirit.size >= sizeIdeal && spirit.energy < spirit.energy_capacity) {
           spirit.divide && spirit.divide();
-        } else if (buddy && buddy.size < sizeIdeal) {
+        } else if (buddy && buddy.size < sizeIdeal && spirit.energy == spirit.energy_capacity) {
           if (geometry_default.calcDistance(spirit.position, buddy.position) > 10)
             spirit.move(buddy.position);
           spirit.merge && spirit.merge(buddy);
@@ -466,6 +479,9 @@
           const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = calcClosestSpirit(spiritEnemiesNearby, spirit);
           if (closestEnemyToMe) {
             const weBigger = spirit.energy / spirit.energy_capacity >= closestEnemyToMe.energy / closestEnemyToMe.energy_capacity;
+            if (!weBigger) {
+              spirit.shout("Ahh!");
+            }
             if (weBigger && closestDistanceToMe > 450) {
               spirit.move(closestEnemyToMe.position);
             } else if (!weBigger && closestDistanceToMe < 300) {
@@ -546,9 +562,10 @@
         fightBasic(spirit);
       }
       const fightingSpirits = [...leftoverSpirits];
-      fightAggressive3(fightingSpirits);
+      moveWithBuddy(fightingSpirits);
       for (let idx = 0; idx < fightingSpirits.length; idx++) {
         const spirit = fightingSpirits[idx];
+        chargeOutpostStrategy(spirit);
         fightForTheBase(spirit);
         fightBasic(spirit);
         fightToWin(spirit);

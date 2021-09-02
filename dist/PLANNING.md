@@ -3,11 +3,14 @@
 * (done) Better attacking/energize math so we don't overenergize
 * (done) Better handling of "smart" attack for non-circles (it always runs) (trying to fix this with % capacity)
 * (done) Early game dump energy into base (trying to do this with easy tick dump logic)
-* In line-mode, newly spawned spirits dump
+* (done) In line-mode, newly spawned spirits dump
+* Smarter logic around gathering energy from stars based on what is available (include middle star if no outpost)
+* Aggression to help us get the outpost
 * Ability to go straight at something but also tangent around it
 * Some early defense (maybe just tune the gather rate)
 * Make it so it seriously doesn't go into the outpost range (even when chasing)
-* Smarter logic around gathering energy from stars based on what is available (include middle star if no outpost)
+
+### Backlog
 * Better gather to handle multiple shapes?
 * Only react with the "tip of the spear" in the line
   * Line needs to move to keep in range with "connection"?
