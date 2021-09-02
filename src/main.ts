@@ -82,7 +82,7 @@ try {
     // return 16
     // return 24
     // return 28
-    // return 30
+    return 30
     return 36
     // return 12
     // return 4
@@ -585,19 +585,24 @@ try {
 
   const fightAggressive3 = (spiritArr: Spirit[]) => {
     spiritArr.forEach((spirit, idx) => {
+      const sizeIdeal = 3//enemySize*10/2 //1//3//enemySize/5+1
       const buddy = spiritArr[idx-1]
-      if (buddy && buddy.size < enemySize) {
+      if (spirit.size >= sizeIdeal && spirit.energy < spirit.energy_capacity) {
+        spirit.divide && spirit.divide()
+      } else if (buddy && buddy.size < sizeIdeal) {
+        if (Geometry.calcDistance(spirit.position, buddy.position) > 10) spirit.move(buddy.position)
         spirit.merge && spirit.merge(buddy)
       }
-      if (spirit.size >= enemySize) spirit.move(enemy_base.position)
+
+      if (spirit.size >= sizeIdeal) spirit.move(enemy_base.position)
       if (spirit.sight.enemies) {
         const spiritEnemiesNearby = spirit.sight.enemies.map((s) => spirits[s]);
         const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = calcClosestSpirit(spiritEnemiesNearby, spirit);
         if (closestEnemyToMe) {
-          const weBigger = closestEnemyToMe.energy/closestEnemyToMe.energy_capacity > spirit.energy/spirit.energy_capacity
-          if (weBigger && closestDistanceToMe > 200) {
+          const weBigger = spirit.energy/spirit.energy_capacity >= closestEnemyToMe.energy/closestEnemyToMe.energy_capacity
+          if (weBigger && closestDistanceToMe > 450) {
             spirit.move(closestEnemyToMe.position)
-          } else if (!weBigger && closestDistanceToMe < 225) {
+          } else if (!weBigger && closestDistanceToMe < 300) {
             spirit.move(Geometry.calcRunAwayPoint(spirit, closestEnemyToMe))
           }
         }
@@ -717,6 +722,7 @@ try {
       // chargeOutpostStrategy(spirit)
       // fightAggressive2(spirit)
       // spirit.move(outpost.position)
+      // spirit.move(enemy_base.position)
       // if (fightingSpirits.length > 10) moveWithStrategy(spirit)
 
       // mergewi(spirit)

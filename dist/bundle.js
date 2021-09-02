@@ -125,6 +125,7 @@
       }
     };
     const getMaxGather = () => {
+      return 30;
       return 36;
       return 52;
     };
@@ -449,20 +450,25 @@
     };
     const fightAggressive3 = (spiritArr) => {
       spiritArr.forEach((spirit, idx) => {
+        const sizeIdeal = 3;
         const buddy = spiritArr[idx - 1];
-        if (buddy && buddy.size < enemySize) {
+        if (spirit.size >= sizeIdeal && spirit.energy < spirit.energy_capacity) {
+          spirit.divide && spirit.divide();
+        } else if (buddy && buddy.size < sizeIdeal) {
+          if (geometry_default.calcDistance(spirit.position, buddy.position) > 10)
+            spirit.move(buddy.position);
           spirit.merge && spirit.merge(buddy);
         }
-        if (spirit.size >= enemySize)
+        if (spirit.size >= sizeIdeal)
           spirit.move(enemy_base.position);
         if (spirit.sight.enemies) {
           const spiritEnemiesNearby = spirit.sight.enemies.map((s) => spirits[s]);
           const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = calcClosestSpirit(spiritEnemiesNearby, spirit);
           if (closestEnemyToMe) {
-            const weBigger = closestEnemyToMe.energy / closestEnemyToMe.energy_capacity > spirit.energy / spirit.energy_capacity;
-            if (weBigger && closestDistanceToMe > 200) {
+            const weBigger = spirit.energy / spirit.energy_capacity >= closestEnemyToMe.energy / closestEnemyToMe.energy_capacity;
+            if (weBigger && closestDistanceToMe > 450) {
               spirit.move(closestEnemyToMe.position);
-            } else if (!weBigger && closestDistanceToMe < 225) {
+            } else if (!weBigger && closestDistanceToMe < 300) {
               spirit.move(geometry_default.calcRunAwayPoint(spirit, closestEnemyToMe));
             }
           }
