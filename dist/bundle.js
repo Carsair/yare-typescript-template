@@ -125,7 +125,6 @@
       }
     };
     const getMaxGather = () => {
-      return 24;
       return 36;
       return 52;
     };
@@ -134,7 +133,7 @@
     const enemyStar = isSouthSpawn ? star_zxq : star_a1c;
     const myNexusPos = geometry_default.calcAveragePos(myStar.position, base.position);
     const myAliveSpirits = my_spirits.filter((s) => s.hp);
-    const enemySpirits = Object.keys(spirits).map((s) => spirits[s]);
+    const enemySpirits = Object.keys(spirits).map((s) => spirits[s]).filter((s) => s.id.indexOf("Carsair") < 0);
     const enemyAliveSpirits = enemySpirits.filter((s) => s.hp);
     const enemySize = enemySpirits[0].size;
     const enemyShape = enemySize == 1 ? "circle" : enemySize == 3 ? "triangle" : "square";
@@ -152,7 +151,7 @@
     const MAX_GATHERERS = getMaxGather();
     const plannedEnergyObj = {};
     const desiredStarEnergy = 0;
-    console.log("Enemy Shape: ", enemyShape);
+    console.log("Enemy Shape: ", enemyShape, enemySize);
     console.log("We have", my_spirits.length, myAliveSpirits.length, "(alive)", MAX_GATHERERS, "(gather)");
     console.log("Enemy has", Object.keys(spirits).length - my_spirits.length, enemyAliveSpirits.length, "(alive)");
     console.log("Planning for tick, star: ", tick, desiredStarEnergy);
@@ -191,6 +190,8 @@
     const gatherBase = (spiritArr) => {
       const safeEnergy = 0;
       spiritArr.forEach((spirit) => {
+        if (spirit.size > 1)
+          spirit.divide && spirit.divide();
         const isBaseBeamable = spirit.sight.structures.filter((s) => s == base.id).length > 0;
         spirit.move(CLOSE_TO_BASE_POS);
         spirit.hasConnection = false;
@@ -205,6 +206,8 @@
       const safeEnergy = 0;
       spiritArr = spiritArr.sort((a, b) => a.energy - b.energy);
       spiritArr.forEach((spirit) => {
+        if (spirit.size > 1)
+          spirit.divide && spirit.divide();
         const isStarBeamable = geometry_default.calcDistance(spirit.position, myStar.position) <= 200;
         const isBaseBeamable = spirit.sight.structures.find((s) => s.indexOf(base.id) >= 0);
         const connection = connectionArr.sort((a, b) => a.energy - b.energy).find((s) => {
@@ -440,7 +443,7 @@
         } else if (true) {
           spirit.move(closestEnemyToMe.position);
         } else if (closestDistanceToMe < 200) {
-          spirit.move(geometry_default.calcRunAwayPoint(spirit, closestEnemyToMe));
+          spirit.move(geometry_default.calcRunAwayPoint(spirit, closestEnemyToMe.position));
         }
       }
     };
@@ -448,10 +451,25 @@
       spiritArr.forEach((spirit, idx) => {
         const buddy = spiritArr[idx - 1];
         if (buddy && buddy.size < enemySize) {
-          spirit.merge(buddy);
+          spirit.merge && spirit.merge(buddy);
         }
         if (spirit.size >= enemySize)
           spirit.move(enemy_base.position);
+        if (spirit.sight.enemies) {
+          const spiritEnemiesNearby = spirit.sight.enemies.map((s) => spirits[s]);
+          const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = calcClosestSpirit(spiritEnemiesNearby, spirit);
+          if (closestEnemyToMe) {
+            const weBigger = closestEnemyToMe.energy / closestEnemyToMe.energy_capacity > spirit.energy / spirit.energy_capacity;
+            if (weBigger && closestDistanceToMe > 200) {
+              spirit.move(closestEnemyToMe.position);
+            } else if (!weBigger && closestDistanceToMe < 225) {
+              spirit.move(geometry_default.calcRunAwayPoint(spirit, closestEnemyToMe));
+            }
+          }
+        }
+        if (spirit.energy == 0) {
+          gatherClosestStar(spirit, [myStar, star_p89]);
+        }
       });
     };
     const fightSmart = (spirit) => {

@@ -80,7 +80,7 @@ try {
     // return 9
     // return 12
     // return 16
-    return 24
+    // return 24
     // return 28
     // return 30
     return 36
@@ -112,10 +112,10 @@ try {
   const myNexusPos = Geometry.calcAveragePos(myStar.position, base.position)
 
   const myAliveSpirits = my_spirits.filter((s: Spirit) => s.hp)
-  const enemySpirits = Object.keys(spirits).map((s: string) => spirits[s])
+  const enemySpirits = Object.keys(spirits).map((s: string) => spirits[s]).filter((s: Spirit) => s.id.indexOf("Carsair") < 0)
   const enemyAliveSpirits = enemySpirits.filter((s: Spirit) => s.hp)
   const enemySize = enemySpirits[0].size
-  const enemyShape = enemySize == 1 ? 'circle' : enemySize == 3 ? 'triangle' : 'square'
+  const enemyShape = enemySize == 1 ? 'circle' : (enemySize == 3 ? 'triangle' : 'square')
   const playerTotalEnergies = Object.keys(spirits).reduce((acc, id) => {
     const s = spirits[id];
       if (!s.hp) return acc
@@ -136,7 +136,7 @@ try {
   // console.log("myStar: ", myStar.position)
   // console.log("enemyStar: ", enemyStar.position)
 
-  console.log("Enemy Shape: ", enemyShape)
+  console.log("Enemy Shape: ", enemyShape, enemySize)
   console.log("We have", my_spirits.length, myAliveSpirits.length, "(alive)", MAX_GATHERERS, "(gather)")
   console.log("Enemy has", Object.keys(spirits).length - my_spirits.length, enemyAliveSpirits.length, "(alive)")
   console.log("Planning for tick, star: ", tick, desiredStarEnergy)
@@ -185,6 +185,7 @@ try {
   const gatherBase = (spiritArr: Spirit[]) => {
     const safeEnergy = 0
     spiritArr.forEach((spirit) => {
+      if (spirit.size > 1) spirit.divide && spirit.divide() // ???
       const isBaseBeamable = spirit.sight.structures.filter((s) => s == base.id).length > 0
       spirit.move(CLOSE_TO_BASE_POS);
       (spirit as any).hasConnection = false
@@ -205,6 +206,7 @@ try {
     const safeEnergy = 0
     spiritArr = spiritArr.sort((a, b) => a.energy - b.energy) //inverted to dump lowest first
     spiritArr.forEach((spirit) => {
+      if (spirit.size > 1) spirit.divide && spirit.divide() // ???
       const isStarBeamable = Geometry.calcDistance(spirit.position, myStar.position) <= 200
       const isBaseBeamable = spirit.sight.structures.find((s) => s.indexOf(base.id) >= 0)
       const connection = connectionArr
@@ -570,13 +572,13 @@ try {
   const fightAggressive2 = (spirit: Spirit) => {
     const {closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe} = calcClosestSpirit(enemyAliveSpirits, spirit)
     if (closestEnemyToMe) {
-      const weBigger = spirit.energy / spirit.energy_capacity > closestEnemyToMe.energy / closestEnemyToMe.energy_capacity
+      const weBigger = spirit.energy/spirit.energy_capacity > closestEnemyToMe.energy/closestEnemyToMe.energy_capacity
       if (weBigger && closestDistanceToMe > 200) {
         spirit.move(closestEnemyToMe.position)
       } else if (true || closestDistanceToMe > 225) {
         spirit.move(closestEnemyToMe.position)
       } else if (closestDistanceToMe < 200) {
-        spirit.move(Geometry.calcRunAwayPoint(spirit, closestEnemyToMe))
+        spirit.move(Geometry.calcRunAwayPoint(spirit, closestEnemyToMe.position))
       }
     }
   }
@@ -585,10 +587,24 @@ try {
     spiritArr.forEach((spirit, idx) => {
       const buddy = spiritArr[idx-1]
       if (buddy && buddy.size < enemySize) {
-        spirit.merge(buddy)
+        spirit.merge && spirit.merge(buddy)
       }
       if (spirit.size >= enemySize) spirit.move(enemy_base.position)
-      // spirit.move(enemy_base.position)
+      if (spirit.sight.enemies) {
+        const spiritEnemiesNearby = spirit.sight.enemies.map((s) => spirits[s]);
+        const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = calcClosestSpirit(spiritEnemiesNearby, spirit);
+        if (closestEnemyToMe) {
+          const weBigger = closestEnemyToMe.energy/closestEnemyToMe.energy_capacity > spirit.energy/spirit.energy_capacity
+          if (weBigger && closestDistanceToMe > 200) {
+            spirit.move(closestEnemyToMe.position)
+          } else if (!weBigger && closestDistanceToMe < 225) {
+            spirit.move(Geometry.calcRunAwayPoint(spirit, closestEnemyToMe))
+          }
+        }
+      }
+      if (spirit.energy == 0) {
+        gatherClosestStar(spirit, [myStar, star_p89])
+      }
     })
   }
 
