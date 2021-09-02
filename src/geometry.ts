@@ -2,6 +2,13 @@ const Geometry = {
   calcDistance: (a: Position, b: Position) => {
     return Math.sqrt(Math.pow(a[0] - b[0], 2) + Math.pow(a[1] - b[1], 2))
   },
+  calcPointBetweenPoints: (a: Position, b: Position, distFromA: number) => {
+    const totalDist = Geometry.calcDistance(a, b)
+    const percentAlong = distFromA / totalDist
+    const [x1, y1] = a
+    const [x2, y2] = b
+    return [x1 + percentAlong*(x2 - x1), y1 + percentAlong*(y2 - y1)] as Position
+  },
   calcRunAwayPoint: (a: Entity, entityToRunFrom: Entity) => {
     return [a.position[0] + a.position[0] - entityToRunFrom.position[0], a.position[1] + a.position[1] - entityToRunFrom.position[1]] as Position
   },
