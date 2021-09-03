@@ -81,13 +81,13 @@ try {
     // return 12
     // return 16
     // return 20
-    return 24
+    // return 24
     // return 28
     return 30
     // return 36
     // return 12
     // return 4
-    return 52
+    // return 52
     // return 152
     // if (tick < 50) return 12
     // if (tick < 100) return 12
@@ -99,7 +99,7 @@ try {
     // if (tick < 400) return 16
     // if (tick < 450) return 40
     // if (tick < 500) return 48
-    // return Math.round((0.08 * tick + 12))
+    return Math.round((0.1 * tick + 16))
   }
 
   ///
@@ -116,7 +116,9 @@ try {
   const enemySpirits = Object.keys(spirits).map((s: string) => spirits[s]).filter((s: Spirit) => s.id.indexOf("Carsair") < 0)
   const enemyAliveSpirits = enemySpirits.filter((s: Spirit) => s.hp)
   const enemySize = enemySpirits[0].size
+  const mySize = my_spirits[0].size
   const enemyShape = enemySize == 1 ? 'circle' : (enemySize == 3 ? 'triangle' : 'square')
+  const myShape = mySize == 1 ? 'circle' : (enemySize == 3 ? 'triangle' : 'square')
   const playerTotalEnergies = Object.keys(spirits).reduce((acc, id) => {
     const s = spirits[id];
       if (!s.hp) return acc
@@ -131,7 +133,7 @@ try {
 
   const MAX_GATHERERS = getMaxGather()//Math.min(getMaxGather(), 4 * Math.round(myStar.energy * .01 + 3))
   const plannedEnergyObj = {}
-  const desiredStarEnergy = 0 //Math.min(970, Math.pow(tick, 1.15))//Math.min(974, Math.pow(tick, 1.35))
+  const desiredStarEnergy = Math.min(970, Math.pow(tick, 1.35))//Math.min(974, Math.pow(tick, 1.35))
   // const lineReserveCapacity = Math.min(8, Math.round(tick/10))
   // console.log("Base: ", base.position)
   // console.log("myStar: ", myStar.position)
@@ -186,7 +188,7 @@ try {
   const gatherBase = (spiritArr: Spirit[]) => {
     const safeEnergy = 0
     spiritArr.forEach((spirit) => {
-      if (spirit.size > 1) spirit.divide && spirit.divide() // ???
+      if (spirit.size > 1) myShape == 'circle' && spirit.divide && spirit.divide() // ???
       const isBaseBeamable = spirit.sight.structures.filter((s) => s == base.id).length > 0
       spirit.move(CLOSE_TO_BASE_POS);
       (spirit as any).hasConnection = false
@@ -207,7 +209,7 @@ try {
     const safeEnergy = 0
     spiritArr = spiritArr.sort((a, b) => a.energy - b.energy) //inverted to dump lowest first
     spiritArr.forEach((spirit) => {
-      if (spirit.size > 1) spirit.divide && spirit.divide() // ???
+      if (spirit.size > 1) myShape == 'circle' && spirit.divide && spirit.divide() // ???
       const isStarBeamable = Geometry.calcDistance(spirit.position, myStar.position) <= 200
       const isBaseBeamable = spirit.sight.structures.find((s) => s.indexOf(base.id) >= 0)
       const connection = connectionArr
@@ -349,7 +351,7 @@ try {
     // firstSpirit.energize(secondSpirit)
     // secondSpirit.move(MIDDLE_POINT_POS)
     // secondSpirit.merge && secondSpirit.merge(firstSpirit)
-    // firstSpirit.divide && firstSpirit.divide()
+    // firstfirstmyShape == 'circle' && Spirit.divide && firstSpirit.divide()
 
     // Utils.shout(firstSpirit, `First: ${firstSpirit.id}`)
     const restOfSpirits = gatherSpirits.slice(1)
@@ -361,7 +363,7 @@ try {
       // Utils.shout(s, `${s.id}${s.position}`)
     })
 
-    // firstSpirit.divide && firstSpirit.divide()
+    // firstfirstmyShape == 'circle' && Spirit.divide && firstSpirit.divide()
 
     // firstSpirit.move(base.position)
     // firstSpirit.energize(base)
@@ -484,6 +486,11 @@ try {
     } else {
       if (spirit.energy < spirit.energy_capacity && availableStar.energy > desiredStarEnergy) spirit.energize(spirit)
     }
+    // if (spirit.energy == spirit.energy_capacity) {
+    //   spirit.set_mark("full")
+    // } else if (spirit.energy == 0) {
+    //   spirit.set_mark("empty")
+    // }
   }
 
   // ///
@@ -589,7 +596,7 @@ try {
       const sizeIdeal = 2//enemySize*10/2 //1//3//enemySize/5+1
       const buddy = spiritArr[idx-1]
       if (spirit.size >= sizeIdeal && spirit.energy < spirit.energy_capacity) {
-        spirit.divide && spirit.divide()
+        myShape == 'circle' && spirit.divide && spirit.divide()
       } else if (buddy && buddy.size < sizeIdeal && spirit.energy == spirit.energy_capacity) {
         if (Geometry.calcDistance(spirit.position, buddy.position) > 10) spirit.move(buddy.position)
         spirit.merge && spirit.merge(buddy)
@@ -602,7 +609,7 @@ try {
       const sizeIdeal = 3//enemySize*10/2 //1//3//enemySize/5+1
       const buddy = spiritArr[idx-1]
       if (spirit.size >= sizeIdeal && spirit.energy < spirit.energy_capacity) {
-        spirit.divide && spirit.divide()
+        myShape == 'circle' && spirit.divide && spirit.divide()
       } else if (buddy && buddy.size < sizeIdeal && spirit.energy == spirit.energy_capacity) {
         if (Geometry.calcDistance(spirit.position, buddy.position) > 10) spirit.move(buddy.position)
         spirit.merge && spirit.merge(buddy)
@@ -727,7 +734,7 @@ try {
 
     const fightingSpirits = [...leftoverSpirits]
     // fightAggressive3(fightingSpirits)
-    moveWithBuddy(fightingSpirits)
+    // moveWithBuddy(fightingSpirits)
     for (let idx = 0; idx < fightingSpirits.length; idx++) {
       const spirit = fightingSpirits[idx]
       // enemyAliveSpirits.filter((es) => {
