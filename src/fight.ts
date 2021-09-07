@@ -130,6 +130,29 @@ const Fight = {
   },
 
   fightSmart: (spirit: Spirit) => {
+    if (spirit.sight.enemies.length > 0) {
+      console.log('spirit.sight.enemies: ', spirit.sight.enemies);
+      spirit.shout("eye")
+      // spirit.sight.enemies
+      const spiritEnemiesNearby = spirit.sight.enemies.map((s) => spirits[s]);
+      const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = Utils.calcClosestSpirit(spiritEnemiesNearby, spirit);
+      if (closestEnemyToMe) {
+        const weBigger = (spirit.energy / spirit.energy_capacity) > (closestEnemyToMe.energy / closestEnemyToMe.energy_capacity)
+        if (!weBigger && !(Geometry.calcDistance(closestEnemyToMe.position, base.position) > 400)) {
+          spirit.shout("RUIN!")
+          spirit.move(Geometry.calcRunAwayPoint(spirit, closestEnemyToMe))
+        } else if (!weBigger && closestDistanceToMe < 200) {
+          spirit.move(Geometry.calcRunAwayPoint(spirit, closestEnemyToMe))
+        } else if (weBigger && closestDistanceToMe > 200) {
+          spirit.move(closestEnemyToMe.position)
+        } else {
+          spirit.move(spirit.position)
+        }
+      }
+    }
+  },
+
+  fightRunaway: (spirit: Spirit) => {
     if (spirit.sight.enemies_beamable.length > 0) return // Fight basic
 
     if (spirit.sight.enemies) {
@@ -137,7 +160,7 @@ const Fight = {
       const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = Utils.calcClosestSpirit(spiritEnemiesNearby, spirit);
       if (closestEnemyToMe) {
         if (closestEnemyToMe.energy / closestEnemyToMe.energy_capacity > spirit.energy / spirit.energy_capacity &&
-          Geometry.calcDistance(closestEnemyToMe.position, base.position) > 400) {
+          !(Geometry.calcDistance(closestEnemyToMe.position, base.position) > 250)) {
           spirit.move(Geometry.calcRunAwayPoint(spirit, closestEnemyToMe))
         } else if (closestEnemyToMe.energy / closestEnemyToMe.energy_capacity > spirit.energy / spirit.energy_capacity &&
           closestDistanceToMe < 200) {

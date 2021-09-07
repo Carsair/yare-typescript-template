@@ -5,43 +5,6 @@ import Strategies from "./strategies"
 import Fight from "./fight"
 
 try {
-
-  ///
-
-  /// BUSINESS UTILS
-
-  ///
-
-  const getMaxGather = () => {
-    // return 4
-    // return 6
-    // return 7
-    // return 8
-    // return 9
-    // return 12
-    // return 16
-    // return 20
-    // return 24
-    // return 28
-    return 30
-    // return 36
-    // return 12
-    // return 4
-    // return 52
-    // return 152
-    // if (tick < 50) return 12
-    // if (tick < 100) return 12
-    // if (tick < 150) return 12
-    // if (tick < 200) return 16
-    // if (tick < 250) return 16
-    // if (tick < 300) return 16
-    // if (tick < 350) return 16
-    // if (tick < 400) return 16
-    // if (tick < 450) return 40
-    // if (tick < 500) return 48
-    return Math.round((0.1 * tick + 16))
-  }
-
   console.log("Enemy Shape: ", Consts.enemyShape, Consts.enemySize)
   console.log("We have", my_spirits.length, Consts.myAliveSpirits.length, "(alive)", Consts.MAX_GATHERERS, "(gather)")
   console.log("Enemy has", Object.keys(spirits).length - my_spirits.length, Consts.enemyAliveSpirits.length, "(alive)")
@@ -67,19 +30,20 @@ try {
     const gatherSpirits = potentialGatherSpirits.slice(0, Consts.MAX_GATHERERS)
     const leftoverSpirits = potentialGatherSpirits.slice(Consts.MAX_GATHERERS)
 
-    const transitionTime = 2
+    const transitionTime = 35
     if (tick >= transitionTime) {
       const indexLimit = Math.round(gatherSpirits.length * .27)
       const gatherBasers = gatherSpirits.slice(0, indexLimit)
       const gatherHaulers = gatherSpirits.slice(indexLimit)
       Gather.gatherBase(gatherBasers)
       Gather.gatherChainHauling(gatherHaulers, gatherBasers)
+      // Gather.gatherInfiniteChain(gatherSpirits)
     }
 
     for (let idx = 0; idx < gatherSpirits.length; idx++) {
       const spirit = gatherSpirits[idx]
       // Prod strategy
-      if (tick < transitionTime) Gather.gatherDumpSimple(spirit)
+      if (tick < transitionTime) Gather.gatherHauling(spirit)
       Fight.fightBaseEmergency(spirit)
       Fight.fightBasic(spirit)
     }
@@ -89,6 +53,7 @@ try {
     // Merge.moveWithBuddy(fightingSpirits)
     for (let idx = 0; idx < fightingSpirits.length; idx++) {
       const spirit = fightingSpirits[idx]
+      // Gather.gatherHauling(spirit)
       Strategies.chargeOutpostStrategy(spirit)
       // Prod strategy
       Fight.fightForTheBase(spirit)

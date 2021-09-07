@@ -1,13 +1,16 @@
 import Geometry from './geometry'
+import Utils from './utils';
 
 const isSouthSpawn = base.position[0] === 2600
 const myStar = isSouthSpawn ? star_a1c : star_zxq;
 const enemySpirits = Object.keys(spirits).map((s: string) => spirits[s]).filter((s: Spirit) => s.id.indexOf("Carsair") < 0)
 const enemySize = enemySpirits[0].size
 const mySize = my_spirits[0].size
+const specialProximity = 199.999
 
 const Consts = {
   isSouthSpawn: isSouthSpawn,
+  specialProximity,
   myStar: isSouthSpawn ? star_a1c : star_zxq,
   enemyStar: isSouthSpawn ? star_zxq : star_a1c,
   middleStar: star_p89,
@@ -29,13 +32,14 @@ const Consts = {
     }
     return acc
   }, [0, 0]),
-  MAX_GATHERERS: 24,
+  MAX_GATHERERS: Utils.getMaxGather(),
   plannedEnergyObj: {},
-  desiredStarEnergy: Math.min(970, Math.pow(tick, 1.35)),
-  CLOSE_TO_STAR_POS: Geometry.calcPointBetweenPoints(myStar.position, base.position, 199),
-  CLOSE_TO_BASE_POS: Geometry.calcPointBetweenPoints(base.position, myStar.position, 199),
+  desiredStarEnergy: Math.min(970, Math.pow(tick, 1.25)),
+  CLOSE_TO_STAR_POS: Geometry.calcPointBetweenPoints(myStar.position, base.position, specialProximity),
+  CLOSE_TO_BASE_POS: Geometry.calcPointBetweenPoints(base.position, myStar.position, specialProximity),
   MIDDLE_POINT_POS: Geometry.calcAveragePos(base.position, myStar.position),
-  NEW_SPAWN_POS: isSouthSpawn ? [2620,1760] as Position : [1580,640] as Position
+  NEW_SPAWN_POS: isSouthSpawn ? [2620,1760] as Position : [1580,640] as Position,
+  OUTPOST_MAINT_POS: Geometry.calcAveragePos(outpost.position, star_p89.position)
 }
 
 export default Consts
