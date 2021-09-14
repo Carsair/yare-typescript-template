@@ -42,7 +42,7 @@ const Geometry = {
     const tanDelX = flipperX * alpha * Math.sin(angle3)
     const tanDelY = flipperY * alpha * Math.cos(angle3)
     const tangentPoint = [x1 + tanDelX, y1 + tanDelY].map(Math.round)
-    return tangentPoint
+    return tangentPoint as Position
   },
   calcClockwiseTangentPointFromPoint: (spirit: Entity, avoidEntity: Entity, radius: number) => {
     const d = Geometry.calcDistance(spirit.position, avoidEntity.position)
@@ -65,7 +65,14 @@ const Geometry = {
     const tanDelX = flipperY * alpha * Math.cos(angle3)
     const tanDelY = flipperX * alpha * Math.sin(angle3)
     const tangentPoint = [x1 + tanDelX, y1 + tanDelY].map(Math.round)
-    return tangentPoint
+    return tangentPoint as Position
+  },
+  calcTangentWithIndex: (spirit: Entity, avoidEntity: Entity, radius: number, idx: number) => {
+    if (idx && idx % 2 == 1) {
+      return Geometry.calcClockwiseTangentPointFromPoint(spirit, avoidEntity, radius)
+    } else {
+      return Geometry.calcTangentPointFromPoint(spirit, avoidEntity, radius)
+    }
   }
 }
 

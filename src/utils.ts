@@ -4,6 +4,7 @@ export default {
   getMaxGather: () => {
     // return 1
     // return 2
+    // return 3
     // return 4
     // return 6
     // return 7
@@ -33,14 +34,14 @@ export default {
     // if (tick < 50) return 12
     // if (tick < 100) return 12
     // if (tick < 150) return 12
-    // if (tick < 200) return 16
+    if (tick < 100) return 16
     // if (tick < 250) return 16
     // if (tick < 300) return 16
     // if (tick < 350) return 16
     // if (tick < 400) return 16
     // if (tick < 450) return 40
     // if (tick < 500) return 48
-    return Math.min(68, Math.round((0.1 * tick + 22)))
+    return Math.min(68, Math.round((0.06 * tick + 12)))
   },
   shout: (spirit: Spirit, message: string) => {
     spirit.shout(('' + message).substring(0, 20))

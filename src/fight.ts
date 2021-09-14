@@ -129,25 +129,50 @@ const Fight = {
     })
   },
 
-  fightSmart: (spirit: Spirit) => {
+  fightSmart: (spirit: Spirit, idx: number) => {
     if (spirit.sight.enemies.length > 0) {
-      console.log('spirit.sight.enemies: ', spirit.sight.enemies);
-      spirit.shout("eye")
-      // spirit.sight.enemies
       const spiritEnemiesNearby = spirit.sight.enemies.map((s) => spirits[s]);
       const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = Utils.calcClosestSpirit(spiritEnemiesNearby, spirit);
       if (closestEnemyToMe) {
         const weBigger = (spirit.energy / spirit.energy_capacity) > (closestEnemyToMe.energy / closestEnemyToMe.energy_capacity)
-        if (!weBigger && !(Geometry.calcDistance(closestEnemyToMe.position, base.position) > 400)) {
-          spirit.shout("RUIN!")
-          spirit.move(Geometry.calcRunAwayPoint(spirit, closestEnemyToMe))
-        } else if (!weBigger && closestDistanceToMe < 200) {
-          spirit.move(Geometry.calcRunAwayPoint(spirit, closestEnemyToMe))
-        } else if (weBigger && closestDistanceToMe > 200) {
-          spirit.move(closestEnemyToMe.position)
+        const weFuller = spirit.energy >= closestEnemyToMe.energy
+        const shouldAggress = Consts.enemyShape == 'circle' ? weFuller : weBigger
+        const isEnemyCloseToBase = Geometry.calcDistance(closestEnemyToMe.position, base.position) < 400
+
+        // if (isEnemyCloseToBase) {
+        //   if (closestDistanceToMe > 200) {
+        //     spirit.move(Geometry.calcPointBetweenPoints(closestEnemyToMe.position, spirit.position, Consts.specialProximity))
+        //   }
+        //   return
+        // }
+
+        if (!(weBigger)) {
+        // if (!(shouldAggress)) {
+          if (closestDistanceToMe < 230) {
+            spirit.move(Geometry.calcRunAwayPoint(spirit, closestEnemyToMe))
+          } else if (closestDistanceToMe < 240) {
+            // if (idx && idx % 2 == 1) {
+            //   spirit.move(Geometry.calcClockwiseTangentPointFromPoint(spirit, closestEnemyToMe, 230))
+            // } else {
+            //   spirit.move(Geometry.calcTangentPointFromPoint(spirit, closestEnemyToMe, 230))
+            // }
+            spirit.move(Geometry.calcTangentWithIndex(spirit, closestEnemyToMe, 230, idx))
+          }
         } else {
-          spirit.move(spirit.position)
+          if (closestDistanceToMe > 200) {
+            spirit.move(Geometry.calcPointBetweenPoints(closestEnemyToMe.position, spirit.position, Consts.specialProximity))
+          }
         }
+
+        // if (!weBigger && !(Geometry.calcDistance(closestEnemyToMe.position, base.position) > 400)) {
+        //   spirit.move(Geometry.calcRunAwayPoint(spirit, closestEnemyToMe))
+        // } else if (!weBigger && closestDistanceToMe < 200) {
+        //   spirit.move(Geometry.calcRunAwayPoint(spirit, closestEnemyToMe))
+        // } else if (weBigger && closestDistanceToMe > 200) {
+        //   spirit.move(closestEnemyToMe.position)
+        // } else {
+        //   spirit.move(spirit.position)
+        // }
       }
     }
   },

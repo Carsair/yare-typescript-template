@@ -33,6 +33,13 @@
   * Newly spawned merge to dump into base
   * Stack up a ton of empties near star to overdraw star and go
 
+  ### Tourney Plan 2
+  * Avoid outpost
+    * Gather middle star?
+  * Get mergetogether working
+  * Emergency gatherers get energized and attack
+    * Same thing ^ emergency defend my star
+
 
 
 ### Jake F

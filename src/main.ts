@@ -3,6 +3,7 @@ import Consts from "./consts"
 import Gather from "./gather"
 import Strategies from "./strategies"
 import Fight from "./fight"
+import Merge from './merge'
 
 try {
   console.log("Enemy Shape: ", Consts.enemyShape, Consts.enemySize)
@@ -43,19 +44,24 @@ try {
     for (let idx = 0; idx < gatherSpirits.length; idx++) {
       const spirit = gatherSpirits[idx]
       // Prod strategy
-      if (tick < transitionTime) Gather.gatherHauling(spirit)
+      if (tick < transitionTime) Gather.gatherHauling(spirit, Consts.myStar)
       Fight.fightBaseEmergency(spirit)
       Fight.fightBasic(spirit)
     }
-
     const fightingSpirits = [...leftoverSpirits]
     // fightAggressive3(fightingSpirits)
     // Merge.moveWithBuddy(fightingSpirits)
     for (let idx = 0; idx < fightingSpirits.length; idx++) {
       const spirit = fightingSpirits[idx]
-      // Gather.gatherHauling(spirit)
-      Strategies.chargeOutpostStrategy(spirit)
+      Gather.gatherHauling(spirit, Consts.middleStar)
+      const match = spirit.id.match(/Carsair_(\d+)/)
+      const permIdx = match ? parseInt(match[1]) : 1
+      Strategies.chargeOutpostStrategy(spirit, permIdx)
+      // Strategies.avoidOutpostStrategy(spirit, permIdx)
+      // Merge.mergeTogetherStrategy(spirit)
+      // spirit.move(enemy_base.position)
       // Prod strategy
+      Fight.fightSmart(spirit, permIdx)  // Comment to not run away
       Fight.fightForTheBase(spirit)
       Fight.fightBasic(spirit)
       Fight.fightToWin(spirit)
