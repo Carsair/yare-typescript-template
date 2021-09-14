@@ -491,14 +491,26 @@
         } else if (spirit.energy <= 3) {
           spirit.set_mark("empty");
           return gather_default.gatherClosestStar(spirit, starArr);
-        }
-        {
+        } else {
           spirit.move(consts_default.OUTPOST_MAINT_POS);
         }
         return;
       }
-      if (outpost.energy < 725) {
-        if (spirit.energy <= 3) {
+      if (outpost.energy < 200) {
+        if (spirit.energy <= 1) {
+          spirit.set_mark("empty");
+          return gather_default.gatherClosestStar(spirit, starArr);
+        } else {
+          if (canEnergizeOutpost) {
+            spirit.energy -= spirit.size;
+            outpost.energy += spirit.size;
+            spirit.energize(outpost);
+          } else {
+            spirit.move(consts_default.OUTPOST_MAINT_POS);
+          }
+        }
+      } else if (outpost.energy < 725) {
+        if (spirit.energy <= 5) {
           spirit.set_mark("empty");
           return gather_default.gatherClosestStar(spirit, starArr);
         } else {
