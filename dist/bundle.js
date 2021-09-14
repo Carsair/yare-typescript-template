@@ -77,7 +77,7 @@
       return tangentPoint;
     },
     calcTangentWithIndex: (spirit, avoidEntity, radius, idx) => {
-      if (idx && idx % 2 == 1) {
+      if (idx % 2 == 1) {
         return Geometry.calcClockwiseTangentPointFromPoint(spirit, avoidEntity, radius);
       } else {
         return Geometry.calcTangentPointFromPoint(spirit, avoidEntity, radius);
@@ -555,6 +555,32 @@
         memory[spirit.id].status = "";
       }
     },
+    fightForTheStar: (spirit) => {
+      const starAttackers = consts_default.enemyAliveSpirits.filter((spirit2) => {
+        geometry_default.calcDistance(spirit2.position, consts_default.myStar.position) < 400;
+      });
+      if (starAttackers.length > 0) {
+        console.log("GOTS");
+        const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = utils_default.calcClosestSpirit(starAttackers, spirit);
+        if (closestEnemyToMe) {
+          if (closestDistanceToMe > 200) {
+            spirit.move(closestEnemyToMe.position);
+          }
+        }
+        if (spirit.energy == 0) {
+          memory[spirit.id] = memory[spirit.id] || {};
+          memory[spirit.id].status = "depleted";
+        }
+        if (memory[spirit.id] && memory[spirit.id].status == "depleted") {
+          gather_default.gatherClosestStar(spirit, [consts_default.myStar]);
+          if (spirit.energy == spirit.energy_capacity) {
+            memory[spirit.id].status = "";
+          }
+        }
+      } else if (memory[spirit.id] && memory[spirit.id].status) {
+        memory[spirit.id].status = "";
+      }
+    },
     fightForTheBase: (spirit) => {
       if (base.sight.enemies.length > 0) {
         const baseEnemies = base.sight.enemies.map((s) => spirits[s]);
@@ -645,7 +671,7 @@
           const weFuller = spirit.energy >= closestEnemyToMe.energy;
           const shouldAggress = consts_default.enemyShape == "circle" ? weFuller : weBigger;
           const isEnemyCloseToBase = geometry_default.calcDistance(closestEnemyToMe.position, base.position) < 400;
-          if (!weBigger) {
+          if (!weFuller) {
             if (closestDistanceToMe < 230) {
               spirit.move(geometry_default.calcRunAwayPoint(spirit, closestEnemyToMe));
             } else if (closestDistanceToMe < 240) {
@@ -719,17 +745,18 @@
         const spirit = gatherSpirits[idx];
         if (tick < transitionTime)
           gather_default.gatherHauling(spirit, consts_default.myStar);
+        fight_default.fightForTheStar(spirit);
         fight_default.fightBaseEmergency(spirit);
         fight_default.fightBasic(spirit);
       }
       const fightingSpirits = [...leftoverSpirits];
       for (let idx = 0; idx < fightingSpirits.length; idx++) {
         const spirit = fightingSpirits[idx];
-        gather_default.gatherHauling(spirit, consts_default.middleStar);
         const match = spirit.id.match(/Carsair_(\d+)/);
         const permIdx = match ? parseInt(match[1]) : 1;
-        strategies_default.chargeOutpostStrategy(spirit, permIdx);
+        strategies_default.avoidOutpostStrategy(spirit, permIdx);
         fight_default.fightSmart(spirit, permIdx);
+        fight_default.fightForTheStar(spirit);
         fight_default.fightForTheBase(spirit);
         fight_default.fightBasic(spirit);
         fight_default.fightToWin(spirit);

@@ -45,6 +45,34 @@ const Fight = {
     }
   },
 
+  fightForTheStar: (spirit: Spirit) => {
+    const starAttackers = Consts.enemyAliveSpirits.filter((spirit) => {
+      Geometry.calcDistance(spirit.position, Consts.myStar.position) < 400
+    })
+    if (starAttackers.length > 0) {
+      console.log("GOTS");
+      const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = Utils.calcClosestSpirit(starAttackers, spirit);
+      if (closestEnemyToMe) {
+        if (closestDistanceToMe > 200) {
+          spirit.move(closestEnemyToMe.position);
+        }
+      }
+      if (spirit.energy == 0) {
+        memory[spirit.id] = memory[spirit.id] || {}
+        memory[spirit.id].status = "depleted"
+      }
+      if (memory[spirit.id] && memory[spirit.id].status == "depleted") {
+        Gather.gatherClosestStar(spirit, [Consts.myStar])
+
+        if (spirit.energy == spirit.energy_capacity) {
+          memory[spirit.id].status = ""
+        }
+      }
+    } else if (memory[spirit.id] && memory[spirit.id].status) {
+      memory[spirit.id].status = ""
+    }
+  },
+
   fightForTheBase: (spirit: Spirit) => {
     if (base.sight.enemies.length > 0) {
       const baseEnemies = base.sight.enemies.map((s) => spirits[s]);
@@ -146,7 +174,8 @@ const Fight = {
         //   return
         // }
 
-        if (!(weBigger)) {
+        if (!(weFuller)) {
+        // if (!(weBigger)) {
         // if (!(shouldAggress)) {
           if (closestDistanceToMe < 230) {
             spirit.move(Geometry.calcRunAwayPoint(spirit, closestEnemyToMe))
@@ -157,6 +186,7 @@ const Fight = {
             //   spirit.move(Geometry.calcTangentPointFromPoint(spirit, closestEnemyToMe, 230))
             // }
             spirit.move(Geometry.calcTangentWithIndex(spirit, closestEnemyToMe, 230, idx))
+            // spirit.move(Geometry.calcTangentPointFromPoint(spirit, closestEnemyToMe, 230))
           }
         } else {
           if (closestDistanceToMe > 200) {

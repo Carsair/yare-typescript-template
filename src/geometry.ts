@@ -68,7 +68,7 @@ const Geometry = {
     return tangentPoint as Position
   },
   calcTangentWithIndex: (spirit: Entity, avoidEntity: Entity, radius: number, idx: number) => {
-    if (idx && idx % 2 == 1) {
+    if (idx % 2 == 1) {
       return Geometry.calcClockwiseTangentPointFromPoint(spirit, avoidEntity, radius)
     } else {
       return Geometry.calcTangentPointFromPoint(spirit, avoidEntity, radius)

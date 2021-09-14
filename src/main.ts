@@ -45,23 +45,25 @@ try {
       const spirit = gatherSpirits[idx]
       // Prod strategy
       if (tick < transitionTime) Gather.gatherHauling(spirit, Consts.myStar)
+      Fight.fightForTheStar(spirit)
       Fight.fightBaseEmergency(spirit)
       Fight.fightBasic(spirit)
     }
+
+    // Gather.gatherHauling(spirit, Consts.middleStar) // when we have center secured
     const fightingSpirits = [...leftoverSpirits]
-    // fightAggressive3(fightingSpirits)
-    // Merge.moveWithBuddy(fightingSpirits)
     for (let idx = 0; idx < fightingSpirits.length; idx++) {
       const spirit = fightingSpirits[idx]
-      Gather.gatherHauling(spirit, Consts.middleStar)
+
       const match = spirit.id.match(/Carsair_(\d+)/)
       const permIdx = match ? parseInt(match[1]) : 1
-      Strategies.chargeOutpostStrategy(spirit, permIdx)
-      // Strategies.avoidOutpostStrategy(spirit, permIdx)
+      // Strategies.chargeOutpostStrategy(spirit, permIdx)
+      Strategies.avoidOutpostStrategy(spirit, permIdx)
       // Merge.mergeTogetherStrategy(spirit)
       // spirit.move(enemy_base.position)
       // Prod strategy
       Fight.fightSmart(spirit, permIdx)  // Comment to not run away
+      Fight.fightForTheStar(spirit)
       Fight.fightForTheBase(spirit)
       Fight.fightBasic(spirit)
       Fight.fightToWin(spirit)
