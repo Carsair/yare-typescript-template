@@ -119,6 +119,16 @@ const Strategies = {
     const enemyControlsOutpost = control.indexOf("Carsair") < 0 && control != "";
     const outpostRange = outpost.energy > 500 ? 600 : 400
     const distToOutpost = Geometry.calcDistance(spirit.position, outpost.position)
+    // General movement
+    if (!idx) {
+      spirit.move(Consts.OUTPOST_MAINT_POS)
+    } else if (idx % 2 == 0) {
+      spirit.move(Consts.enemyStar.position)
+    } else if (idx % 2 == 1) {
+      spirit.move(enemy_base.position)
+    }
+
+    // Avoidance
     if (enemyControlsOutpost) {
       if (distToOutpost < outpostRange + 200) {
         spirit.move(Geometry.calcTangentWithIndex(spirit, outpost, outpostRange+20, idx))

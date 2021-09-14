@@ -508,6 +508,13 @@
       const enemyControlsOutpost = control.indexOf("Carsair") < 0 && control != "";
       const outpostRange = outpost.energy > 500 ? 600 : 400;
       const distToOutpost = geometry_default.calcDistance(spirit.position, outpost.position);
+      if (!idx) {
+        spirit.move(consts_default.OUTPOST_MAINT_POS);
+      } else if (idx % 2 == 0) {
+        spirit.move(consts_default.enemyStar.position);
+      } else if (idx % 2 == 1) {
+        spirit.move(enemy_base.position);
+      }
       if (enemyControlsOutpost) {
         if (distToOutpost < outpostRange + 200) {
           spirit.move(geometry_default.calcTangentWithIndex(spirit, outpost, outpostRange + 20, idx));
