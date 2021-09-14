@@ -177,15 +177,15 @@ const Fight = {
         if (!(weFuller)) {
         // if (!(weBigger)) {
         // if (!(shouldAggress)) {
-          if (closestDistanceToMe < 230) {
+          if (closestDistanceToMe < 200) {
             spirit.move(Geometry.calcRunAwayPoint(spirit, closestEnemyToMe))
-          } else if (closestDistanceToMe < 240) {
+          } else if (closestDistanceToMe < 300) {
             // if (idx && idx % 2 == 1) {
             //   spirit.move(Geometry.calcClockwiseTangentPointFromPoint(spirit, closestEnemyToMe, 230))
             // } else {
             //   spirit.move(Geometry.calcTangentPointFromPoint(spirit, closestEnemyToMe, 230))
             // }
-            spirit.move(Geometry.calcTangentWithIndex(spirit, closestEnemyToMe, 230, idx))
+            spirit.move(Geometry.calcTangentWithIndex(spirit, closestEnemyToMe, 240, idx))
             // spirit.move(Geometry.calcTangentPointFromPoint(spirit, closestEnemyToMe, 230))
           }
         } else {

@@ -57,11 +57,13 @@ try {
 
       const match = spirit.id.match(/Carsair_(\d+)/)
       const permIdx = match ? parseInt(match[1]) : 1
-      // Strategies.chargeOutpostStrategy(spirit, permIdx)
-      Strategies.avoidOutpostStrategy(spirit, permIdx)
+      Gather.gatherAlwaysNearStar(spirit)
+      Strategies.chargeOutpostStrategy(spirit, permIdx)
+      // Strategies.avoidOutpostStrategy(spirit, permIdx)
       // Merge.mergeTogetherStrategy(spirit)
       // spirit.move(enemy_base.position)
       // Prod strategy
+
       Fight.fightSmart(spirit, permIdx)  // Comment to not run away
       Fight.fightForTheStar(spirit)
       Fight.fightForTheBase(spirit)

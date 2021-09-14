@@ -31,7 +31,7 @@ const Merge = {
           if (closestDistanceToMe > 10) {
             spirit.move(Geometry.calcPointBetweenPoints(spirit.position, closestFriendToMe.position, 10))
           }
-          spirit.shout(`${closestFriendToMe.id}`)
+          // spirit.shout(`${closestFriendToMe.id}`)
           if (spirit.merge) spirit.merge(closestFriendToMe)
         }
       }

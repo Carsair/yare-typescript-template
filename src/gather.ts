@@ -333,6 +333,30 @@ const Gather = {
     }
   },
 
+  gatherAlwaysNearStar: (spirit: Spirit, starArr?: Star[]) => {
+    // spirit.sight.structures.filter((s) => {  })  //Should be doing it like this
+    let closestDist = null as null|number;
+    starArr = starArr ? starArr : [Consts.myStar, star_p89, Consts.enemyStar]
+    const availableStar = starArr.reduce((acc: Star, star) => {
+      const dist = Geometry.calcDistance(spirit.position, star.position)
+      const desiredStarEnergy = Consts.desiredStarEnergyMap[star.id]
+
+      if (star.id == Consts.middleStar.id && tick < 100) return acc
+
+      if ((closestDist == null || dist < closestDist) && star.energy > desiredStarEnergy) {
+        closestDist = dist
+        acc = star
+      }
+      return acc
+    }, null as any)
+    const desiredStarEnergy = Consts.desiredStarEnergyMap[availableStar.id]
+    if (availableStar && availableStar.energy > desiredStarEnergy && spirit.energy < spirit.energy_capacity) {
+      spirit.energize(spirit)
+      availableStar.energy -= spirit.size
+      spirit.energy += spirit.size
+    }
+  },
+
   gatherClosestStar: (spirit: Spirit, starArr?: Star[]) => {
     if (spirit.energy == 0) {
       spirit.set_mark("empty")
@@ -341,7 +365,7 @@ const Gather = {
     starArr = starArr ? starArr : [Consts.myStar, star_p89, Consts.enemyStar]
     const availableStar = starArr.reduce((acc: Star, star) => {
       const dist = Geometry.calcDistance(spirit.position, star.position)
-      const desiredStarEnergy = Consts.myStar.id == star.id ? Consts.desiredStarEnergy : 0
+      const desiredStarEnergy = Consts.desiredStarEnergyMap[star.id]
       if ((closestDist == null || dist < closestDist) && star.energy > desiredStarEnergy) {
         closestDist = dist
         acc = star
