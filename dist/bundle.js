@@ -805,6 +805,7 @@
         const match = spirit.id.match(/Carsair_(\d+)/);
         const permIdx = match ? parseInt(match[1]) : 1;
         gather_default.gatherAlwaysNearStar(spirit);
+        strategies_default.chargeOutpostStrategy(spirit, permIdx);
         strategies_default.avoidOutpostStrategy(spirit, permIdx);
         fight_default.fightSmart(spirit, permIdx);
         fight_default.fightForTheStar(spirit);
