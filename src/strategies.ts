@@ -132,6 +132,19 @@ const Strategies = {
     const enemyControlsOutpost = control.indexOf("Carsair") < 0 && control != "";
     const outpostRange = outpost.energy > 500 ? 600 : 400
     const distToOutpost = Geometry.calcDistance(spirit.position, outpost.position)
+    const starArr = tick < 100 ? [Consts.myStar, Consts.enemyStar] : [Consts.myStar, Consts.enemyStar, Consts.middleStar]
+
+    if (spirit.mark == "empty") {
+      console.log("already empty", spirit.id);
+      return Gather.gatherClosestStar(spirit, starArr)
+    }
+
+    if (spirit.energy <= 3) {
+      console.log("depleted at least", spirit.id);
+      spirit.set_mark("empty")
+      return Gather.gatherClosestStar(spirit, starArr)
+    }
+
     // General movement
     if (!idx) {
       spirit.move(Consts.OUTPOST_MAINT_POS)

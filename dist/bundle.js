@@ -541,6 +541,16 @@
       const enemyControlsOutpost = control.indexOf("Carsair") < 0 && control != "";
       const outpostRange = outpost.energy > 500 ? 600 : 400;
       const distToOutpost = geometry_default.calcDistance(spirit.position, outpost.position);
+      const starArr = tick < 100 ? [consts_default.myStar, consts_default.enemyStar] : [consts_default.myStar, consts_default.enemyStar, consts_default.middleStar];
+      if (spirit.mark == "empty") {
+        console.log("already empty", spirit.id);
+        return gather_default.gatherClosestStar(spirit, starArr);
+      }
+      if (spirit.energy <= 3) {
+        console.log("depleted at least", spirit.id);
+        spirit.set_mark("empty");
+        return gather_default.gatherClosestStar(spirit, starArr);
+      }
       if (!idx) {
         spirit.move(consts_default.OUTPOST_MAINT_POS);
       } else if (idx % 2 == 0) {
@@ -707,11 +717,11 @@
         const spiritEnemiesNearby = spirit.sight.enemies.map((s) => spirits[s]);
         const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = utils_default.calcClosestSpirit(spiritEnemiesNearby, spirit);
         if (closestEnemyToMe) {
-          const weBigger = spirit.energy / spirit.energy_capacity > closestEnemyToMe.energy / closestEnemyToMe.energy_capacity;
-          const weFuller = spirit.energy >= closestEnemyToMe.energy;
+          const weFuller = spirit.energy / spirit.energy_capacity > closestEnemyToMe.energy / closestEnemyToMe.energy_capacity;
+          const weBigger = spirit.energy >= closestEnemyToMe.energy;
           const shouldAggress = consts_default.enemyShape == "circle" ? weFuller : weBigger;
           const isEnemyCloseToBase = geometry_default.calcDistance(closestEnemyToMe.position, base.position) < 400;
-          if (!weFuller) {
+          if (!weBigger) {
             if (closestDistanceToMe < 200) {
               spirit.move(geometry_default.calcRunAwayPoint(spirit, closestEnemyToMe));
             } else if (closestDistanceToMe < 300) {
@@ -795,7 +805,7 @@
         const match = spirit.id.match(/Carsair_(\d+)/);
         const permIdx = match ? parseInt(match[1]) : 1;
         gather_default.gatherAlwaysNearStar(spirit);
-        strategies_default.chargeOutpostStrategy(spirit, permIdx);
+        strategies_default.avoidOutpostStrategy(spirit, permIdx);
         fight_default.fightSmart(spirit, permIdx);
         fight_default.fightForTheStar(spirit);
         fight_default.fightForTheBase(spirit);

@@ -162,8 +162,8 @@ const Fight = {
       const spiritEnemiesNearby = spirit.sight.enemies.map((s) => spirits[s]);
       const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = Utils.calcClosestSpirit(spiritEnemiesNearby, spirit);
       if (closestEnemyToMe) {
-        const weBigger = (spirit.energy / spirit.energy_capacity) > (closestEnemyToMe.energy / closestEnemyToMe.energy_capacity)
-        const weFuller = spirit.energy >= closestEnemyToMe.energy
+        const weFuller = (spirit.energy / spirit.energy_capacity) > (closestEnemyToMe.energy / closestEnemyToMe.energy_capacity)
+        const weBigger = spirit.energy >= closestEnemyToMe.energy
         const shouldAggress = Consts.enemyShape == 'circle' ? weFuller : weBigger
         const isEnemyCloseToBase = Geometry.calcDistance(closestEnemyToMe.position, base.position) < 400
 
@@ -174,19 +174,14 @@ const Fight = {
         //   return
         // }
 
-        if (!(weFuller)) {
-        // if (!(weBigger)) {
+        // We bigger to be more avoidance, weFuller to go for it vs bigger shapes
+        // if (!(weFuller)) {
+        if (!(weBigger)) {
         // if (!(shouldAggress)) {
           if (closestDistanceToMe < 200) {
             spirit.move(Geometry.calcRunAwayPoint(spirit, closestEnemyToMe))
           } else if (closestDistanceToMe < 300) {
-            // if (idx && idx % 2 == 1) {
-            //   spirit.move(Geometry.calcClockwiseTangentPointFromPoint(spirit, closestEnemyToMe, 230))
-            // } else {
-            //   spirit.move(Geometry.calcTangentPointFromPoint(spirit, closestEnemyToMe, 230))
-            // }
             spirit.move(Geometry.calcTangentWithIndex(spirit, closestEnemyToMe, 240, idx))
-            // spirit.move(Geometry.calcTangentPointFromPoint(spirit, closestEnemyToMe, 230))
           }
         } else {
           if (closestDistanceToMe > 200) {
