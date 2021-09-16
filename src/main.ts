@@ -4,6 +4,7 @@ import Gather from "./gather"
 import Strategies from "./strategies"
 import Fight from "./fight"
 import Merge from './merge'
+import Utils from './utils'
 
 try {
   console.log("Enemy Shape: ", Consts.enemyShape, Consts.enemySize)
@@ -19,17 +20,23 @@ try {
   // ///
   const main = () => {
     // Could sort this based on proximity to star or corner. (done-ish?)
-    // var gatherSpirits = myAliveSpirits.slice(0, MAX_GATHERERS)
     let potentialGatherSpiritsClose = [] as Spirit[]
     let potentialGatherSpiritsFar  = [] as Spirit[]
     Consts.myAliveSpirits.forEach((s) => {
       if (Geometry.calcDistance(Consts.myNexusPos, s.position) < 500) potentialGatherSpiritsClose.push(s)
       else potentialGatherSpiritsFar.push(s)
     })
-    potentialGatherSpiritsFar.sort((spiritA, spiritB) => Geometry.calcDistance(spiritB.position, Consts.myNexusPos) -  Geometry.calcDistance(spiritA.position, Consts.myNexusPos))
+    const potentialGatherSpiritsFarSorted = potentialGatherSpiritsFar.sort((spiritA, spiritB) => Geometry.calcDistance(spiritB.position, Consts.myNexusPos) -  Geometry.calcDistance(spiritA.position, Consts.myNexusPos))
     const potentialGatherSpirits = [...potentialGatherSpiritsClose, ...potentialGatherSpiritsFar]
+    const extraNeeded = 200
+    const amountToMidGather = 1
+    const haveEnoughExtra = tick > 100 && potentialGatherSpirits.length - Consts.MAX_GATHERERS > extraNeeded
+    const totalGatherersNeeded = haveEnoughExtra ? Consts.MAX_GATHERERS + amountToMidGather : Consts.MAX_GATHERERS
+    // const potentialGatherSpirits = [...Consts.myAliveSpirits]
+    // const potentialGatherSpirits = Consts.myAliveSpirits.sort((spiritA, spiritB) => Geometry.calcDistance(spiritB.position, Consts.myNexusPos) -  Geometry.calcDistance(spiritA.position, Consts.myNexusPos))
     const gatherSpirits = potentialGatherSpirits.slice(0, Consts.MAX_GATHERERS)
-    const leftoverSpirits = potentialGatherSpirits.slice(Consts.MAX_GATHERERS)
+    const midGatherers = potentialGatherSpirits.slice(Consts.MAX_GATHERERS, Consts.MAX_GATHERERS + amountToMidGather)
+    const leftoverSpirits = potentialGatherSpirits.slice(totalGatherersNeeded)
 
     const transitionTime = 35
     if (tick >= transitionTime) {
@@ -38,28 +45,40 @@ try {
       const gatherHaulers = gatherSpirits.slice(indexLimit)
       Gather.gatherBase(gatherBasers)
       Gather.gatherChainHauling(gatherHaulers, gatherBasers)
-      // Gather.gatherInfiniteChain(gatherSpirits)
     }
 
     for (let idx = 0; idx < gatherSpirits.length; idx++) {
       const spirit = gatherSpirits[idx]
       // Prod strategy
-      if (tick < transitionTime) Gather.gatherHauling(spirit, Consts.myStar)
+      if (tick < transitionTime) Gather.gatherHaulingMyBase(spirit, Consts.myStar)
       Fight.fightForTheStar(spirit)
-      Fight.fightBaseEmergency(spirit)
+      // Fight.fightBaseEmergency(spirit)
       Fight.fightBasic(spirit)
     }
 
-    // Gather.gatherHauling(spirit, Consts.middleStar) // when we have center secured
+
+    // const midGatherers = !haveEnoughExtra ? [] : leftoverSpirits.slice(0, amountToMidGather)
+    // const fightingSpirits = !haveEnoughExtra ? [...leftoverSpirits] : leftoverSpirits.slice(amountToMidGather)
     const fightingSpirits = [...leftoverSpirits]
+    console.log('haveEnoughExtra: ', haveEnoughExtra, midGatherers.length, fightingSpirits.length);
+    for (let i = 0; i < midGatherers.length; i++) {
+      const spirit = midGatherers[i]
+      Utils.shout(spirit, "gather" + spirit.id)
+      Gather.gatherHauling(spirit, Consts.middleStar) // when we have center secured
+    }
+
+
     for (let idx = 0; idx < fightingSpirits.length; idx++) {
       const spirit = fightingSpirits[idx]
+      // Utils.shout(spirit, "fight/strategy" + spirit.id)
 
       const match = spirit.id.match(/Carsair_(\d+)/)
       const permIdx = match ? parseInt(match[1]) : 1
       Gather.gatherAlwaysNearStar(spirit) // Questionable
       Strategies.chargeOutpostStrategy(spirit, permIdx)
       Strategies.avoidOutpostStrategy(spirit, permIdx)
+      // Strategies.indexProngedAttack(spirit, permIdx)
+
       // Merge.mergeTogetherStrategy(spirit)
       // spirit.move(enemy_base.position)
       // Prod strategy

@@ -38,7 +38,7 @@ const Consts = {
   desiredStarEnergy: Math.min(970, Math.pow(tick, 1.25)),
   desiredStarEnergyMap: {
     [myStar.id]: Math.min(970, Math.pow(tick, 1.25)),
-    [star_p89.id]: Math.min(970, Math.pow(Math.max(0, tick-100), 1)),
+    [star_p89.id]: Math.min(900, Math.pow(Math.max(0, tick-130), 1.25)),
     [enemyStar.id]: 0
   },
   CLOSE_TO_STAR_POS: Geometry.calcPointBetweenPoints(myStar.position, base.position, specialProximity),

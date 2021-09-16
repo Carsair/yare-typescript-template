@@ -179,7 +179,7 @@
     desiredStarEnergy: Math.min(970, Math.pow(tick, 1.25)),
     desiredStarEnergyMap: {
       [myStar.id]: Math.min(970, Math.pow(tick, 1.25)),
-      [star_p89.id]: Math.min(970, Math.pow(Math.max(0, tick - 100), 1)),
+      [star_p89.id]: Math.min(900, Math.pow(Math.max(0, tick - 130), 1.25)),
       [enemyStar.id]: 0
     },
     CLOSE_TO_STAR_POS: geometry_default.calcPointBetweenPoints(myStar.position, base.position, specialProximity),
@@ -198,7 +198,7 @@
         spirit.move(base.position);
       spirit.energize(base);
     },
-    gatherHauling: (spirit, star) => {
+    gatherHaulingMyBase: (spirit, star) => {
       star = star || consts_default.myStar;
       const baseStructs = spirit.sight.structures.filter((s) => s.indexOf(base.id) >= 0);
       const isStarBeamable = geometry_default.calcDistance(spirit.position, star.position) <= 200;
@@ -214,6 +214,36 @@
         spirit.set_mark("full");
       } else if (spirit.energy == 0) {
         spirit.set_mark("empty");
+      }
+      if (baseStructs.length == 0 && spirit.mark == "full") {
+        spirit.move(base.position);
+      } else if (!isStarBeamable && spirit.mark == "empty") {
+        spirit.move(star.position);
+      }
+    },
+    gatherHauling: (spirit, star) => {
+      star = star || consts_default.myStar;
+      const desiredStarEnergy = consts_default.desiredStarEnergyMap[star.id];
+      const baseStructs = spirit.sight.structures.filter((s) => s.indexOf(base.id) >= 0);
+      const isStarBeamable = geometry_default.calcDistance(spirit.position, star.position) <= consts_default.specialProximity;
+      if (baseStructs.length > 0 && base.energy < base.energy_capacity && spirit.energy > 0) {
+        spirit.energize(base);
+        spirit.energy -= spirit.size;
+      } else if (isStarBeamable && star.energy > desiredStarEnergy && spirit.energy < spirit.energy_capacity) {
+        spirit.energize(spirit);
+        spirit.energy += spirit.size;
+      }
+      if (spirit.energy == spirit.energy_capacity) {
+        spirit.set_mark("full");
+      } else if (spirit.energy == 0) {
+        spirit.set_mark("empty");
+      }
+      if (!(spirit.mark == "full" || spirit.mark == "empty")) {
+        if (spirit.energy / spirit.energy_capacity > 0.5) {
+          spirit.set_mark("full");
+        } else {
+          spirit.set_mark("empty");
+        }
       }
       if (baseStructs.length == 0 && spirit.mark == "full") {
         spirit.move(base.position);
@@ -313,8 +343,12 @@
           spirit.set_mark("full");
         } else if (spirit.energy == 0) {
           spirit.set_mark("empty");
-        } else if (!spirit.mark) {
-          spirit.set_mark("empty");
+        } else if (!(spirit.mark == "full" || spirit.mark == "empty")) {
+          if (spirit.energy / spirit.energy_capacity > 0.5) {
+            spirit.set_mark("full");
+          } else {
+            spirit.set_mark("empty");
+          }
         }
         if (!connection && spirit.mark == "full") {
           spirit.move(consts_default.CLOSE_TO_BASE_POS);
@@ -522,18 +556,11 @@
             spirit.move(consts_default.OUTPOST_MAINT_POS);
           }
         }
-        return;
       } else if (spirit.energy <= 5) {
         spirit.set_mark("empty");
-        return gather_default.gatherClosestStar(spirit);
+        return gather_default.gatherClosestStar(spirit, starArr);
       } else {
-        if (!idx) {
-          spirit.move(consts_default.OUTPOST_MAINT_POS);
-        } else if (idx % 2 == 0) {
-          spirit.move(consts_default.enemyStar.position);
-        } else if (idx % 2 == 1) {
-          spirit.move(enemy_base.position);
-        }
+        spirit.move(consts_default.OUTPOST_MAINT_POS);
       }
     },
     avoidOutpostStrategy: (spirit, idx) => {
@@ -543,25 +570,27 @@
       const distToOutpost = geometry_default.calcDistance(spirit.position, outpost.position);
       const starArr = tick < 100 ? [consts_default.myStar, consts_default.enemyStar] : [consts_default.myStar, consts_default.enemyStar, consts_default.middleStar];
       if (spirit.mark == "empty") {
-        console.log("already empty", spirit.id);
         return gather_default.gatherClosestStar(spirit, starArr);
       }
       if (spirit.energy <= 3) {
-        console.log("depleted at least", spirit.id);
         spirit.set_mark("empty");
         return gather_default.gatherClosestStar(spirit, starArr);
       }
+      if (enemyControlsOutpost) {
+        if (distToOutpost < outpostRange + 200) {
+          spirit.move(geometry_default.calcTangentWithIndex(spirit, outpost, outpostRange + 20, idx));
+        }
+      }
+    },
+    indexProngedAttack: (spirit, idx) => {
+      if (spirit.mark == "empty")
+        return;
       if (!idx) {
         spirit.move(consts_default.OUTPOST_MAINT_POS);
       } else if (idx % 2 == 0) {
         spirit.move(consts_default.enemyStar.position);
       } else if (idx % 2 == 1) {
         spirit.move(enemy_base.position);
-      }
-      if (enemyControlsOutpost) {
-        if (distToOutpost < outpostRange + 200) {
-          spirit.move(geometry_default.calcTangentWithIndex(spirit, outpost, outpostRange + 20, idx));
-        }
       }
     },
     moveEnemy: (spirit) => {
@@ -716,7 +745,7 @@
       if (spirit.sight.enemies.length > 0) {
         const spiritEnemiesNearby = spirit.sight.enemies.map((s) => spirits[s]);
         const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = utils_default.calcClosestSpirit(spiritEnemiesNearby, spirit);
-        if (closestEnemyToMe) {
+        if (closestEnemyToMe && spirit.energy > 0) {
           const weFuller = spirit.energy / spirit.energy_capacity > closestEnemyToMe.energy / closestEnemyToMe.energy_capacity;
           const weBigger = spirit.energy >= closestEnemyToMe.energy;
           const shouldAggress = consts_default.enemyShape == "circle" ? weFuller : weBigger;
@@ -779,10 +808,15 @@
         else
           potentialGatherSpiritsFar.push(s);
       });
-      potentialGatherSpiritsFar.sort((spiritA, spiritB) => geometry_default.calcDistance(spiritB.position, consts_default.myNexusPos) - geometry_default.calcDistance(spiritA.position, consts_default.myNexusPos));
+      const potentialGatherSpiritsFarSorted = potentialGatherSpiritsFar.sort((spiritA, spiritB) => geometry_default.calcDistance(spiritB.position, consts_default.myNexusPos) - geometry_default.calcDistance(spiritA.position, consts_default.myNexusPos));
       const potentialGatherSpirits = [...potentialGatherSpiritsClose, ...potentialGatherSpiritsFar];
+      const extraNeeded = 200;
+      const amountToMidGather = 1;
+      const haveEnoughExtra = tick > 100 && potentialGatherSpirits.length - consts_default.MAX_GATHERERS > extraNeeded;
+      const totalGatherersNeeded = haveEnoughExtra ? consts_default.MAX_GATHERERS + amountToMidGather : consts_default.MAX_GATHERERS;
       const gatherSpirits = potentialGatherSpirits.slice(0, consts_default.MAX_GATHERERS);
-      const leftoverSpirits = potentialGatherSpirits.slice(consts_default.MAX_GATHERERS);
+      const midGatherers = potentialGatherSpirits.slice(consts_default.MAX_GATHERERS, consts_default.MAX_GATHERERS + amountToMidGather);
+      const leftoverSpirits = potentialGatherSpirits.slice(totalGatherersNeeded);
       const transitionTime = 35;
       if (tick >= transitionTime) {
         const indexLimit = Math.round(gatherSpirits.length * 0.27);
@@ -794,12 +828,17 @@
       for (let idx = 0; idx < gatherSpirits.length; idx++) {
         const spirit = gatherSpirits[idx];
         if (tick < transitionTime)
-          gather_default.gatherHauling(spirit, consts_default.myStar);
+          gather_default.gatherHaulingMyBase(spirit, consts_default.myStar);
         fight_default.fightForTheStar(spirit);
-        fight_default.fightBaseEmergency(spirit);
         fight_default.fightBasic(spirit);
       }
       const fightingSpirits = [...leftoverSpirits];
+      console.log("haveEnoughExtra: ", haveEnoughExtra, midGatherers.length, fightingSpirits.length);
+      for (let i = 0; i < midGatherers.length; i++) {
+        const spirit = midGatherers[i];
+        utils_default.shout(spirit, "gather" + spirit.id);
+        gather_default.gatherHauling(spirit, consts_default.middleStar);
+      }
       for (let idx = 0; idx < fightingSpirits.length; idx++) {
         const spirit = fightingSpirits[idx];
         const match = spirit.id.match(/Carsair_(\d+)/);

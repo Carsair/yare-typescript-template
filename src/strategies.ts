@@ -72,60 +72,12 @@ const Strategies = {
           spirit.move(Consts.OUTPOST_MAINT_POS)
         }
       }
-      return; // Until it's charged keep charging?
     } else if (spirit.energy <= 5) {
       spirit.set_mark("empty")
-      return Gather.gatherClosestStar(spirit)
+      return Gather.gatherClosestStar(spirit, starArr)
     } else {
-      if (!idx) {
-        spirit.move(Consts.OUTPOST_MAINT_POS)
-      } else if (idx % 2 == 0) {
-        spirit.move(Consts.enemyStar.position)
-      } else if (idx % 2 == 1) {
-        spirit.move(enemy_base.position)
-      }
+      spirit.move(Consts.OUTPOST_MAINT_POS)
     }
-    // const outpost = spirit.sight.enemies_beamable.map((s: string) => spirits[s])
-    // if (spirit.energy >= 8) return gatherClosestStar(spirit)
-    // let strategyDestination
-    // if (outpost.energy < 725) strategyDestination = outpost.position
-    // else strategyDestination = enemy_base.position
-
-
-    // if (outpostStructs.length > 0 && spirit.energy > 0 && (outpost.energy < 725 || enemyControlsOutpost)) {
-    //   spirit.energy -= spirit.size
-    //   outpost.energy += spirit.size
-    //   spirit.energize(outpost)
-    // } else if (enemyControlsOutpost && spirit.energy > 0) {
-    //   spirit.move(outpost.position)
-    // } else if (!enemyControlsOutpost && spirit.energy > 0 && outpost.energy >= 725 && enemyBaseStructs.length == 0) {
-    //   // spirit.move(Consts.enemyStar.position)
-    //   spirit.move(enemy_base.position)
-    // } else {
-    //   if (!idx) {
-    //     spirit.move(Consts.OUTPOST_MAINT_POS)
-    //   } else if (idx % 3 == 0) {
-    //     spirit.move(Consts.OUTPOST_MAINT_POS)
-    //   } else if (idx % 3 == 1) {
-    //     spirit.move(Consts.enemyStar.position)
-    //   } else if (idx % 3 == 2) {
-    //     spirit.move(enemy_base.position)
-    //   }
-    // }
-
-
-    // console.log("outpost?", outpostStructs)
-    // console.log("outpost structs?", spirit.sight.structures)
-    // spirit.move(outpost.position)
-    // let defendPoint;
-    // defendPoint = Geometry.calcTangentPointFromPoint(spirit, outpost, 620)
-    // if (parseInt(spirit.id.split('_')[1]) % 2 == 1) defendPoint = Geometry.calcClockwiseTangentPointFromPoint(spirit, outpost, 620)
-
-    // if (Array.isArray(defendPoint)) {
-    //   const seedX = 0//Math.floor(Math.random() * 100) - 50
-    //   const seedY = 0//Math.floor(Math.random() * 100) - 50
-    //   spirit.move([defendPoint[0]+seedX, defendPoint[1]+seedY]);
-    // }
   },
   avoidOutpostStrategy: (spirit: Spirit, idx: number) => {
     const control = (outpost as any).control
@@ -135,15 +87,23 @@ const Strategies = {
     const starArr = tick < 100 ? [Consts.myStar, Consts.enemyStar] : [Consts.myStar, Consts.enemyStar, Consts.middleStar]
 
     if (spirit.mark == "empty") {
-      console.log("already empty", spirit.id);
       return Gather.gatherClosestStar(spirit, starArr)
     }
 
     if (spirit.energy <= 3) {
-      console.log("depleted at least", spirit.id);
       spirit.set_mark("empty")
       return Gather.gatherClosestStar(spirit, starArr)
     }
+
+    // Avoidance
+    if (enemyControlsOutpost) {
+      if (distToOutpost < outpostRange + 200) {
+        spirit.move(Geometry.calcTangentWithIndex(spirit, outpost, outpostRange+20, idx))
+      }
+    }
+  },
+  indexProngedAttack: (spirit: Spirit, idx: number) => {
+    if (spirit.mark == "empty") return;
 
     // General movement
     if (!idx) {
@@ -152,13 +112,6 @@ const Strategies = {
       spirit.move(Consts.enemyStar.position)
     } else if (idx % 2 == 1) {
       spirit.move(enemy_base.position)
-    }
-
-    // Avoidance
-    if (enemyControlsOutpost) {
-      if (distToOutpost < outpostRange + 200) {
-        spirit.move(Geometry.calcTangentWithIndex(spirit, outpost, outpostRange+20, idx))
-      }
     }
   },
   moveEnemy: (spirit: Spirit) => {

@@ -161,7 +161,7 @@ const Fight = {
     if (spirit.sight.enemies.length > 0) {
       const spiritEnemiesNearby = spirit.sight.enemies.map((s) => spirits[s]);
       const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = Utils.calcClosestSpirit(spiritEnemiesNearby, spirit);
-      if (closestEnemyToMe) {
+      if (closestEnemyToMe && spirit.energy > 0) {
         const weFuller = (spirit.energy / spirit.energy_capacity) > (closestEnemyToMe.energy / closestEnemyToMe.energy_capacity)
         const weBigger = spirit.energy >= closestEnemyToMe.energy
         const shouldAggress = Consts.enemyShape == 'circle' ? weFuller : weBigger
