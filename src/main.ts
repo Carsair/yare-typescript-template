@@ -26,17 +26,35 @@ try {
       if (Geometry.calcDistance(Consts.myNexusPos, s.position) < 500) potentialGatherSpiritsClose.push(s)
       else potentialGatherSpiritsFar.push(s)
     })
-    const potentialGatherSpiritsFarSorted = potentialGatherSpiritsFar.sort((spiritA, spiritB) => Geometry.calcDistance(spiritB.position, Consts.myNexusPos) -  Geometry.calcDistance(spiritA.position, Consts.myNexusPos))
+    // const potentialGatherSpiritsFarSorted = potentialGatherSpiritsFar.sort((spiritA, spiritB) => Geometry.calcDistance(spiritB.position, Consts.myNexusPos) -  Geometry.calcDistance(spiritA.position, Consts.myNexusPos))
     const potentialGatherSpirits = [...potentialGatherSpiritsClose, ...potentialGatherSpiritsFar]
-    const extraNeeded = 200
-    const amountToMidGather = 1
-    const haveEnoughExtra = tick > 100 && potentialGatherSpirits.length - Consts.MAX_GATHERERS > extraNeeded
+    const gatherSpirits = potentialGatherSpirits.slice(0, Consts.MAX_GATHERERS)
+    const leftoverSpirits = potentialGatherSpirits.slice(Consts.MAX_GATHERERS)
+
+    const extraNeeded = 35
+    const amountToMidGather = 20
+    const haveEnoughExtra = tick > 100 && Consts.myAliveSpirits.length - Consts.MAX_GATHERERS > extraNeeded
     const totalGatherersNeeded = haveEnoughExtra ? Consts.MAX_GATHERERS + amountToMidGather : Consts.MAX_GATHERERS
     // const potentialGatherSpirits = [...Consts.myAliveSpirits]
     // const potentialGatherSpirits = Consts.myAliveSpirits.sort((spiritA, spiritB) => Geometry.calcDistance(spiritB.position, Consts.myNexusPos) -  Geometry.calcDistance(spiritA.position, Consts.myNexusPos))
-    const gatherSpirits = potentialGatherSpirits.slice(0, Consts.MAX_GATHERERS)
-    const midGatherers = potentialGatherSpirits.slice(Consts.MAX_GATHERERS, Consts.MAX_GATHERERS + amountToMidGather)
-    const leftoverSpirits = potentialGatherSpirits.slice(totalGatherersNeeded)
+    let midGatherers = [] as Spirit[];
+
+    if (haveEnoughExtra) {
+      const existingMGs = leftoverSpirits.filter((s) => {
+        return memory[s.id] && memory[s.id].midGather
+      })
+      let newMGs = [] as Spirit[];
+      if (existingMGs.length < amountToMidGather) {
+        newMGs = leftoverSpirits.slice(0, amountToMidGather - existingMGs.length)
+      } else {
+        newMGs = []
+      }
+      newMGs.forEach((s) => {memory[s.id] = {midGather: true}})
+      midGatherers = [...existingMGs, ...newMGs]
+    }
+    let fightingSpirits = leftoverSpirits.filter((s) => {
+      return !(memory[s.id] && memory[s.id].midGather)
+    });
 
     const transitionTime = 35
     if (tick >= transitionTime) {
@@ -59,7 +77,6 @@ try {
 
     // const midGatherers = !haveEnoughExtra ? [] : leftoverSpirits.slice(0, amountToMidGather)
     // const fightingSpirits = !haveEnoughExtra ? [...leftoverSpirits] : leftoverSpirits.slice(amountToMidGather)
-    const fightingSpirits = [...leftoverSpirits]
     console.log('haveEnoughExtra: ', haveEnoughExtra, midGatherers.length, fightingSpirits.length);
     for (let i = 0; i < midGatherers.length; i++) {
       const spirit = midGatherers[i]

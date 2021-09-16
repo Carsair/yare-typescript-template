@@ -808,15 +808,32 @@
         else
           potentialGatherSpiritsFar.push(s);
       });
-      const potentialGatherSpiritsFarSorted = potentialGatherSpiritsFar.sort((spiritA, spiritB) => geometry_default.calcDistance(spiritB.position, consts_default.myNexusPos) - geometry_default.calcDistance(spiritA.position, consts_default.myNexusPos));
       const potentialGatherSpirits = [...potentialGatherSpiritsClose, ...potentialGatherSpiritsFar];
-      const extraNeeded = 200;
-      const amountToMidGather = 1;
-      const haveEnoughExtra = tick > 100 && potentialGatherSpirits.length - consts_default.MAX_GATHERERS > extraNeeded;
-      const totalGatherersNeeded = haveEnoughExtra ? consts_default.MAX_GATHERERS + amountToMidGather : consts_default.MAX_GATHERERS;
       const gatherSpirits = potentialGatherSpirits.slice(0, consts_default.MAX_GATHERERS);
-      const midGatherers = potentialGatherSpirits.slice(consts_default.MAX_GATHERERS, consts_default.MAX_GATHERERS + amountToMidGather);
-      const leftoverSpirits = potentialGatherSpirits.slice(totalGatherersNeeded);
+      const leftoverSpirits = potentialGatherSpirits.slice(consts_default.MAX_GATHERERS);
+      const extraNeeded = 35;
+      const amountToMidGather = 20;
+      const haveEnoughExtra = tick > 100 && consts_default.myAliveSpirits.length - consts_default.MAX_GATHERERS > extraNeeded;
+      const totalGatherersNeeded = haveEnoughExtra ? consts_default.MAX_GATHERERS + amountToMidGather : consts_default.MAX_GATHERERS;
+      let midGatherers = [];
+      if (haveEnoughExtra) {
+        const existingMGs = leftoverSpirits.filter((s) => {
+          return memory[s.id] && memory[s.id].midGather;
+        });
+        let newMGs = [];
+        if (existingMGs.length < amountToMidGather) {
+          newMGs = leftoverSpirits.slice(0, amountToMidGather - existingMGs.length);
+        } else {
+          newMGs = [];
+        }
+        newMGs.forEach((s) => {
+          memory[s.id] = { midGather: true };
+        });
+        midGatherers = [...existingMGs, ...newMGs];
+      }
+      let fightingSpirits = leftoverSpirits.filter((s) => {
+        return !(memory[s.id] && memory[s.id].midGather);
+      });
       const transitionTime = 35;
       if (tick >= transitionTime) {
         const indexLimit = Math.round(gatherSpirits.length * 0.27);
@@ -832,7 +849,6 @@
         fight_default.fightForTheStar(spirit);
         fight_default.fightBasic(spirit);
       }
-      const fightingSpirits = [...leftoverSpirits];
       console.log("haveEnoughExtra: ", haveEnoughExtra, midGatherers.length, fightingSpirits.length);
       for (let i = 0; i < midGatherers.length; i++) {
         const spirit = midGatherers[i];
