@@ -18,21 +18,21 @@ const Merge = {
 
   mergeTogetherStrategy: (spirit: Spirit) => {
     // if (spirit.energy / spirit.energy_capacity < .70) return spirit.divide && spirit.divide()
-    if (spirit.energy < spirit.energy_capacity && spirit.size > 1) {
+    if (spirit.energy < spirit.energy_capacity/2 && spirit.size > 1) {
+      spirit.shout(`dying divide`)
       return spirit.divide && spirit.divide()
     }
-    const maxCapac = 3 //10 * Consts.enemyAliveSpirits[0].energy_capacity;
+    const maxCapac = 15 //10 * Consts.enemyAliveSpirits[0].energy_capacity;
     if (spirit.sight.friends.length > 0) {
       const friendsNearby = spirit.sight.friends.map((s) => spirits[s])
       const { closestSpirit: closestFriendToMe, closestDistance: closestDistanceToMe } = Utils.calcClosestSpirit(friendsNearby, spirit);
       if (closestFriendToMe) {
-
-        if (spirit.size + closestFriendToMe.size <= maxCapac) {
+        if (spirit.size + closestFriendToMe.size <= maxCapac && (spirit.energy + closestFriendToMe.energy) / (spirit.energy_capacity + closestFriendToMe.energy_capacity)) {
           if (closestDistanceToMe > 10) {
-            spirit.move(Geometry.calcPointBetweenPoints(spirit.position, closestFriendToMe.position, 10))
+            spirit.move(Geometry.calcPointBetweenPoints(spirit.position, closestFriendToMe.position, 5))
           }
-          // spirit.shout(`${closestFriendToMe.id}`)
-          if (spirit.merge) spirit.merge(closestFriendToMe)
+          spirit.shout(`trying to merge`)
+          spirit.merge && spirit.merge(closestFriendToMe)
         }
       }
     }

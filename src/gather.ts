@@ -169,6 +169,7 @@ const Gather = {
         spirit.energize(base)
         spirit.energy -= spirit.size
         base.energy += spirit.size
+        spirit.move(Consts.CLOSE_TO_BASE_POS)
       } else if (isStarBeamable && Consts.myStar.energy > Consts.desiredStarEnergy && spirit.energy < spirit.energy_capacity) {
         spirit.energize(spirit)
         Consts.myStar.energy -= spirit.size

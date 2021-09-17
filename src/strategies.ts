@@ -19,7 +19,7 @@ const Strategies = {
     //   spirit.move(calcRunAwayPoint(spirit, outpost))
     //   return
     // }
-    const starArr = tick < 100 ? [Consts.myStar, Consts.enemyStar] : [Consts.myStar, Consts.enemyStar, Consts.middleStar]
+    const starArr = tick < 100 ? [Consts.myStar] : [Consts.myStar, Consts.middleStar]
     const outpostStructs = spirit.sight.structures.filter((s) => s.indexOf("outpost") >= 0)
     const enemyBaseStructs = spirit.sight.structures.filter((s) => s.indexOf(enemy_base.id) >= 0)
     const canEnergizeOutpost = Geometry.calcDistance(spirit.position, outpost.position) < 200
@@ -84,7 +84,7 @@ const Strategies = {
     const enemyControlsOutpost = control.indexOf("Carsair") < 0 && control != "";
     const outpostRange = outpost.energy > 500 ? 600 : 400
     const distToOutpost = Geometry.calcDistance(spirit.position, outpost.position)
-    const starArr = tick < 100 ? [Consts.myStar, Consts.enemyStar] : [Consts.myStar, Consts.enemyStar, Consts.middleStar]
+    const starArr = tick < 100 ? [Consts.myStar] : [Consts.myStar, Consts.middleStar]
 
     if (spirit.mark == "empty") {
       return Gather.gatherClosestStar(spirit, starArr)
@@ -116,6 +116,31 @@ const Strategies = {
   },
   moveEnemy: (spirit: Spirit) => {
     spirit.move(enemy_base.position)
+  },
+  squareJumpEnemy: (spiritsArr: Spirit[]) => {
+    const leaders = spiritsArr.slice(0,1)
+    leaders.forEach((s) => {
+      if (s.energy > 50 && tick > 20) {
+        s.jump && s.jump(Geometry.calcPointBetweenPoints(s.position, Consts.enemyStar.position, 50))
+      }
+    })
+    const followers = spiritsArr.slice(1)
+    followers.forEach((s) => {
+      if (s.energy > 50) {
+        const connection = leaders
+          .filter((s2) => s.sight.friends_beamable.find((s3) => s3 == s2.id))
+          .sort((a, b) => a.energy - b.energy) // inverted to energize lowest first
+          .find((s2) => s2.energy < 50)
+
+        if (connection) {
+          s.energize(connection)
+        }
+      }
+    })
+    spiritsArr.forEach((s) => {
+      s.move(Consts.enemyStar.position)
+      // s.move(enemy_base.position)
+    })
   }
 }
 

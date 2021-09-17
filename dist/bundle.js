@@ -326,6 +326,7 @@
           spirit.energize(base);
           spirit.energy -= spirit.size;
           base.energy += spirit.size;
+          spirit.move(consts_default.CLOSE_TO_BASE_POS);
         } else if (isStarBeamable && consts_default.myStar.energy > consts_default.desiredStarEnergy && spirit.energy < spirit.energy_capacity) {
           spirit.energize(spirit);
           consts_default.myStar.energy -= spirit.size;
@@ -501,104 +502,6 @@
   };
   var gather_default = Gather;
 
-  // src/strategies.ts
-  var Strategies = {
-    spreadAttack: (spiritsArr) => {
-    },
-    chargeOutpostStrategy: (spirit, idx) => {
-      const enemyControlsOutpost = outpost.control.indexOf("Carsair") < 0;
-      const starArr = tick < 100 ? [consts_default.myStar, consts_default.enemyStar] : [consts_default.myStar, consts_default.enemyStar, consts_default.middleStar];
-      const outpostStructs = spirit.sight.structures.filter((s) => s.indexOf("outpost") >= 0);
-      const enemyBaseStructs = spirit.sight.structures.filter((s) => s.indexOf(enemy_base.id) >= 0);
-      const canEnergizeOutpost = geometry_default.calcDistance(spirit.position, outpost.position) < 200;
-      if (spirit.mark == "empty") {
-        return gather_default.gatherClosestStar(spirit, starArr);
-      }
-      if (spirit.energy == 0) {
-        return gather_default.gatherClosestStar(spirit, starArr);
-      }
-      if (enemyControlsOutpost || outpost.energy == 0) {
-        if (canEnergizeOutpost) {
-          spirit.energy -= spirit.size;
-          outpost.energy += spirit.size;
-          spirit.energize(outpost);
-        } else if (spirit.energy <= 3) {
-          spirit.set_mark("empty");
-          return gather_default.gatherClosestStar(spirit, starArr);
-        } else {
-          spirit.move(consts_default.OUTPOST_MAINT_POS);
-        }
-        return;
-      }
-      if (outpost.energy < 200) {
-        if (spirit.energy <= 1) {
-          spirit.set_mark("empty");
-          return gather_default.gatherClosestStar(spirit, starArr);
-        } else {
-          if (canEnergizeOutpost) {
-            spirit.energy -= spirit.size;
-            outpost.energy += spirit.size;
-            spirit.energize(outpost);
-          } else {
-            spirit.move(consts_default.OUTPOST_MAINT_POS);
-          }
-        }
-      } else if (outpost.energy < 725) {
-        if (spirit.energy <= 5) {
-          spirit.set_mark("empty");
-          return gather_default.gatherClosestStar(spirit, starArr);
-        } else {
-          if (canEnergizeOutpost) {
-            spirit.energy -= spirit.size;
-            outpost.energy += spirit.size;
-            spirit.energize(outpost);
-          } else {
-            spirit.move(consts_default.OUTPOST_MAINT_POS);
-          }
-        }
-      } else if (spirit.energy <= 5) {
-        spirit.set_mark("empty");
-        return gather_default.gatherClosestStar(spirit, starArr);
-      } else {
-        spirit.move(consts_default.OUTPOST_MAINT_POS);
-      }
-    },
-    avoidOutpostStrategy: (spirit, idx) => {
-      const control = outpost.control;
-      const enemyControlsOutpost = control.indexOf("Carsair") < 0 && control != "";
-      const outpostRange = outpost.energy > 500 ? 600 : 400;
-      const distToOutpost = geometry_default.calcDistance(spirit.position, outpost.position);
-      const starArr = tick < 100 ? [consts_default.myStar, consts_default.enemyStar] : [consts_default.myStar, consts_default.enemyStar, consts_default.middleStar];
-      if (spirit.mark == "empty") {
-        return gather_default.gatherClosestStar(spirit, starArr);
-      }
-      if (spirit.energy <= 3) {
-        spirit.set_mark("empty");
-        return gather_default.gatherClosestStar(spirit, starArr);
-      }
-      if (enemyControlsOutpost) {
-        if (distToOutpost < outpostRange + 200) {
-          spirit.move(geometry_default.calcTangentWithIndex(spirit, outpost, outpostRange + 20, idx));
-        }
-      }
-    },
-    indexProngedAttack: (spirit, idx) => {
-      if (spirit.mark == "empty")
-        return;
-      if (!idx) {
-        spirit.move(consts_default.OUTPOST_MAINT_POS);
-      } else if (idx % 2 == 0) {
-        spirit.move(consts_default.enemyStar.position);
-      } else if (idx % 2 == 1) {
-        spirit.move(enemy_base.position);
-      }
-    },
-    moveEnemy: (spirit) => {
-      spirit.move(enemy_base.position);
-    }
-  };
-  var strategies_default = Strategies;
-
   // src/fight.ts
   var Fight = {
     fightBasic: (spirit) => {
@@ -612,8 +515,13 @@
       }
     },
     fightBaseEmergency: (spirit) => {
-      const baseEnemies = base.sight.enemies.map((s) => spirits[s]).filter((s) => geometry_default.calcDistance(s.position, base.position) < 250);
+      if (spirit.mark == "empty") {
+        const starArr = tick < 100 ? [consts_default.myStar] : [consts_default.myStar, consts_default.middleStar];
+        return gather_default.gatherClosestStar(spirit, starArr);
+      }
+      const baseEnemies = base.sight.enemies.map((s) => spirits[s]).filter((s) => geometry_default.calcDistance(s.position, base.position) < 220);
       if (baseEnemies.length > 0) {
+        console.log("Base emergency!");
         const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = utils_default.calcClosestSpirit(baseEnemies, spirit);
         if (closestEnemyToMe) {
           if (closestDistanceToMe > 200) {
@@ -635,11 +543,15 @@
       }
     },
     fightForTheStar: (spirit) => {
-      const starAttackers = consts_default.enemyAliveSpirits.filter((spirit2) => {
-        geometry_default.calcDistance(spirit2.position, consts_default.myStar.position) < 400;
+      if (spirit.mark == "empty") {
+        const starArr = tick < 100 ? [consts_default.myStar] : [consts_default.myStar, consts_default.middleStar];
+        return gather_default.gatherClosestStar(spirit, starArr);
+      }
+      const starAttackers = consts_default.enemyAliveSpirits.filter((es) => {
+        return geometry_default.calcDistance(es.position, consts_default.myStar.position) < 400;
       });
       if (starAttackers.length > 0) {
-        console.log("GOTS");
+        console.log("Star under attack!");
         const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = utils_default.calcClosestSpirit(starAttackers, spirit);
         if (closestEnemyToMe) {
           if (closestDistanceToMe > 200) {
@@ -661,8 +573,15 @@
       }
     },
     fightForTheBase: (spirit) => {
-      if (base.sight.enemies.length > 0) {
-        const baseEnemies = base.sight.enemies.map((s) => spirits[s]);
+      if (spirit.mark == "empty") {
+        const starArr = tick < 100 ? [consts_default.myStar] : [consts_default.myStar, consts_default.middleStar];
+        return gather_default.gatherClosestStar(spirit, starArr);
+      }
+      const baseEnemies = consts_default.enemyAliveSpirits.filter((es) => {
+        return geometry_default.calcDistance(es.position, consts_default.myStar.position) < 400;
+      });
+      if (baseEnemies.length > 0) {
+        console.log("Base under attack!");
         const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = utils_default.calcClosestSpirit(baseEnemies, spirit);
         if (closestEnemyToMe) {
           if (closestDistanceToMe > 200) {
@@ -748,9 +667,9 @@
         if (closestEnemyToMe && spirit.energy > 0) {
           const weFuller = spirit.energy / spirit.energy_capacity > closestEnemyToMe.energy / closestEnemyToMe.energy_capacity;
           const weBigger = spirit.energy >= closestEnemyToMe.energy;
+          const weOverHalf = spirit.energy / spirit.energy_capacity;
           const shouldAggress = consts_default.enemyShape == "circle" ? weFuller : weBigger;
-          const isEnemyCloseToBase = geometry_default.calcDistance(closestEnemyToMe.position, base.position) < 400;
-          if (!weBigger) {
+          if (!weOverHalf) {
             if (closestDistanceToMe < 200) {
               spirit.move(geometry_default.calcRunAwayPoint(spirit, closestEnemyToMe));
             } else if (closestDistanceToMe < 300) {
@@ -792,14 +711,9 @@
   };
   var fight_default = Fight;
 
-  // src/main.ts
-  try {
-    console.log("Enemy Shape: ", consts_default.enemyShape, consts_default.enemySize);
-    console.log("We have", my_spirits.length, consts_default.myAliveSpirits.length, "(alive)", consts_default.MAX_GATHERERS, "(gather)");
-    console.log("Enemy has", Object.keys(spirits).length - my_spirits.length, consts_default.enemyAliveSpirits.length, "(alive)");
-    console.log("Planning for tick, star: ", tick, consts_default.desiredStarEnergy);
-    console.log("Planning for energies: us:", consts_default.playerTotalEnergies[0], " them: ", consts_default.playerTotalEnergies[1]);
-    const main = () => {
+  // src/circles.ts
+  var circles_default = {
+    main: () => {
       let potentialGatherSpiritsClose = [];
       let potentialGatherSpiritsFar = [];
       consts_default.myAliveSpirits.forEach((s) => {
@@ -811,7 +725,7 @@
       const potentialGatherSpirits = [...potentialGatherSpiritsClose, ...potentialGatherSpiritsFar];
       const gatherSpirits = potentialGatherSpirits.slice(0, consts_default.MAX_GATHERERS);
       const leftoverSpirits = potentialGatherSpirits.slice(consts_default.MAX_GATHERERS);
-      const extraNeeded = 35;
+      const extraNeeded = 200;
       const amountToMidGather = 20;
       const haveEnoughExtra = tick > 100 && consts_default.myAliveSpirits.length - consts_default.MAX_GATHERERS > extraNeeded;
       const totalGatherersNeeded = haveEnoughExtra ? consts_default.MAX_GATHERERS + amountToMidGather : consts_default.MAX_GATHERERS;
@@ -831,7 +745,7 @@
         });
         midGatherers = [...existingMGs, ...newMGs];
       }
-      let fightingSpirits = leftoverSpirits.filter((s) => {
+      let fightingSpirits = !haveEnoughExtra ? leftoverSpirits : leftoverSpirits.filter((s) => {
         return !(memory[s.id] && memory[s.id].midGather);
       });
       const transitionTime = 35;
@@ -847,12 +761,12 @@
         if (tick < transitionTime)
           gather_default.gatherHaulingMyBase(spirit, consts_default.myStar);
         fight_default.fightForTheStar(spirit);
+        fight_default.fightBaseEmergency(spirit);
         fight_default.fightBasic(spirit);
       }
       console.log("haveEnoughExtra: ", haveEnoughExtra, midGatherers.length, fightingSpirits.length);
       for (let i = 0; i < midGatherers.length; i++) {
         const spirit = midGatherers[i];
-        utils_default.shout(spirit, "gather" + spirit.id);
         gather_default.gatherHauling(spirit, consts_default.middleStar);
       }
       for (let idx = 0; idx < fightingSpirits.length; idx++) {
@@ -860,16 +774,21 @@
         const match = spirit.id.match(/Carsair_(\d+)/);
         const permIdx = match ? parseInt(match[1]) : 1;
         gather_default.gatherAlwaysNearStar(spirit);
-        strategies_default.chargeOutpostStrategy(spirit, permIdx);
-        strategies_default.avoidOutpostStrategy(spirit, permIdx);
-        fight_default.fightSmart(spirit, permIdx);
         fight_default.fightForTheStar(spirit);
-        fight_default.fightForTheBase(spirit);
         fight_default.fightBasic(spirit);
         fight_default.fightToWin(spirit);
       }
-    };
-    main();
+    }
+  };
+
+  // src/main.ts
+  try {
+    console.log("Enemy Shape: ", consts_default.enemyShape, consts_default.enemySize);
+    console.log("We have", my_spirits.length, consts_default.myAliveSpirits.length, "(alive)", consts_default.MAX_GATHERERS, "(gather)");
+    console.log("Enemy has", Object.keys(spirits).length - my_spirits.length, consts_default.enemyAliveSpirits.length, "(alive)");
+    console.log("Planning for tick, star: ", tick, consts_default.desiredStarEnergy);
+    console.log("Planning for energies: us:", consts_default.playerTotalEnergies[0], " them: ", consts_default.playerTotalEnergies[1]);
+    circles_default.main();
   } catch (e) {
     console.log(e.message);
   }

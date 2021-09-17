@@ -19,10 +19,16 @@ const Fight = {
   },
 
   fightBaseEmergency: (spirit: Spirit) => {
+    if (spirit.mark == "empty") {
+      const starArr = tick < 100 ? [Consts.myStar] : [Consts.myStar, Consts.middleStar]
+      return Gather.gatherClosestStar(spirit, starArr)
+    }
+
     const baseEnemies = base.sight.enemies
       .map((s) => spirits[s])
-      .filter((s) => Geometry.calcDistance(s.position, base.position) < 250)
+      .filter((s) => Geometry.calcDistance(s.position, base.position) < 220)
     if (baseEnemies.length > 0) {
+      console.log("Base emergency!");
       const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = Utils.calcClosestSpirit(baseEnemies, spirit);
       if (closestEnemyToMe) {
         if (closestDistanceToMe > 200) {
@@ -46,11 +52,16 @@ const Fight = {
   },
 
   fightForTheStar: (spirit: Spirit) => {
-    const starAttackers = Consts.enemyAliveSpirits.filter((spirit) => {
-      Geometry.calcDistance(spirit.position, Consts.myStar.position) < 400
+    if (spirit.mark == "empty") {
+      const starArr = tick < 100 ? [Consts.myStar] : [Consts.myStar, Consts.middleStar]
+      return Gather.gatherClosestStar(spirit, starArr)
+    }
+
+    const starAttackers = Consts.enemyAliveSpirits.filter((es) => {
+      return Geometry.calcDistance(es.position, Consts.myStar.position) < 400
     })
     if (starAttackers.length > 0) {
-      console.log("GOTS");
+      console.log("Star under attack!");
       const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = Utils.calcClosestSpirit(starAttackers, spirit);
       if (closestEnemyToMe) {
         if (closestDistanceToMe > 200) {
@@ -74,8 +85,15 @@ const Fight = {
   },
 
   fightForTheBase: (spirit: Spirit) => {
-    if (base.sight.enemies.length > 0) {
-      const baseEnemies = base.sight.enemies.map((s) => spirits[s]);
+    if (spirit.mark == "empty") {
+      const starArr = tick < 100 ? [Consts.myStar] : [Consts.myStar, Consts.middleStar]
+      return Gather.gatherClosestStar(spirit, starArr)
+    }
+    const baseEnemies = Consts.enemyAliveSpirits.filter((es) => {
+      return Geometry.calcDistance(es.position, Consts.myStar.position) < 400
+    })
+    if (baseEnemies.length > 0) {
+      console.log("Base under attack!");
       const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = Utils.calcClosestSpirit(baseEnemies, spirit);
       if (closestEnemyToMe) {
         if (closestDistanceToMe > 200) {
@@ -164,19 +182,15 @@ const Fight = {
       if (closestEnemyToMe && spirit.energy > 0) {
         const weFuller = (spirit.energy / spirit.energy_capacity) > (closestEnemyToMe.energy / closestEnemyToMe.energy_capacity)
         const weBigger = spirit.energy >= closestEnemyToMe.energy
+        const weOverHalf = spirit.energy / spirit.energy_capacity
         const shouldAggress = Consts.enemyShape == 'circle' ? weFuller : weBigger
-        const isEnemyCloseToBase = Geometry.calcDistance(closestEnemyToMe.position, base.position) < 400
-
-        // if (isEnemyCloseToBase) {
-        //   if (closestDistanceToMe > 200) {
-        //     spirit.move(Geometry.calcPointBetweenPoints(closestEnemyToMe.position, spirit.position, Consts.specialProximity))
-        //   }
-        //   return
-        // }
 
         // We bigger to be more avoidance, weFuller to go for it vs bigger shapes
+        // if (false) {
+        if (!(weOverHalf)) {
+
         // if (!(weFuller)) {
-        if (!(weBigger)) {
+        // if (!(weBigger)) {
         // if (!(shouldAggress)) {
           if (closestDistanceToMe < 200) {
             spirit.move(Geometry.calcRunAwayPoint(spirit, closestEnemyToMe))
@@ -188,16 +202,6 @@ const Fight = {
             spirit.move(Geometry.calcPointBetweenPoints(closestEnemyToMe.position, spirit.position, Consts.specialProximity))
           }
         }
-
-        // if (!weBigger && !(Geometry.calcDistance(closestEnemyToMe.position, base.position) > 400)) {
-        //   spirit.move(Geometry.calcRunAwayPoint(spirit, closestEnemyToMe))
-        // } else if (!weBigger && closestDistanceToMe < 200) {
-        //   spirit.move(Geometry.calcRunAwayPoint(spirit, closestEnemyToMe))
-        // } else if (weBigger && closestDistanceToMe > 200) {
-        //   spirit.move(closestEnemyToMe.position)
-        // } else {
-        //   spirit.move(spirit.position)
-        // }
       }
     }
   },
