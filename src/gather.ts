@@ -298,7 +298,7 @@ const Gather = {
     }
     let closestDist = null as null|number;
     starArr = starArr ? starArr : [Consts.myStar, star_p89, Consts.enemyStar]
-    const availableStar = starArr.reduce((acc: Star, star) => {
+    let availableStar = starArr.reduce((acc: Star, star) => {
       const dist = Geometry.calcDistance(spirit.position, star.position)
       const desiredStarEnergy = Consts.desiredStarEnergyMap[star.id]
       if ((closestDist == null || dist < closestDist) && star.energy > desiredStarEnergy) {
@@ -307,6 +307,8 @@ const Gather = {
       }
       return acc
     }, null as any)
+    if (!availableStar) availableStar = Consts.myStar;
+
     // Use distance calc to avoid getting too close.
     if (Geometry.calcDistance(availableStar.position, spirit.position) > 200) {
       spirit.move(Geometry.calcPointBetweenPoints(spirit.position, availableStar.position, Consts.specialProximity))

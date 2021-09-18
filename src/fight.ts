@@ -10,10 +10,8 @@ const Fight = {
       const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = Utils.calcClosestShootSpirit(spiritEnemiesBeamable, spirit)
       if (closestEnemyToMe) {
         spirit.energize(closestEnemyToMe)
-        closestEnemyToMe.energy = closestEnemyToMe.energy - spirit.size * 2
-        // if (closestDistanceToMe < 200) {
-        //   spirit.move(Geometry.calcRunAwayPoint(spirit, closestEnemyToMe))
-        // }
+        closestEnemyToMe.energy -= spirit.size * 2
+        spirit.energy -= spirit.size
       }
     }
   },
@@ -26,10 +24,15 @@ const Fight = {
 
     const baseEnemies = base.sight.enemies
       .map((s) => spirits[s])
-      .filter((s) => Geometry.calcDistance(s.position, base.position) < 220)
+      .filter((s) => {
+        return Geometry.calcDistance(s.position, base.position) < 220
+      })
+
     if (baseEnemies.length > 0) {
       console.log("Base emergency!");
+
       const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = Utils.calcClosestSpirit(baseEnemies, spirit);
+
       if (closestEnemyToMe) {
         if (closestDistanceToMe > 200) {
           spirit.move(closestEnemyToMe.position);
@@ -90,7 +93,7 @@ const Fight = {
       return Gather.gatherClosestStar(spirit, starArr)
     }
     const baseEnemies = Consts.enemyAliveSpirits.filter((es) => {
-      return Geometry.calcDistance(es.position, Consts.myStar.position) < 400
+      return Geometry.calcDistance(es.position, base.position) < 400
     })
     if (baseEnemies.length > 0) {
       console.log("Base under attack!");
