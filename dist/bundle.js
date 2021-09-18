@@ -176,9 +176,9 @@
     }, [0, 0]),
     MAX_GATHERERS: utils_default.getMaxGather(),
     plannedEnergyObj: {},
-    desiredStarEnergy: Math.min(970, Math.pow(tick, 1.25)),
+    desiredStarEnergy: Math.min(960, Math.pow(tick, 1.25)),
     desiredStarEnergyMap: {
-      [myStar.id]: Math.min(970, Math.pow(tick, 1.25)),
+      [myStar.id]: Math.min(960, Math.pow(tick, 1.25)),
       [star_p89.id]: Math.min(900, Math.pow(Math.max(0, tick - 130), 1.25)),
       [enemyStar.id]: 0
     },
@@ -192,12 +192,6 @@
 
   // src/gather.ts
   var Gather = {
-    gatherDumpSimple: (spirit) => {
-      const isBaseBeamable = spirit.sight.structures.filter((s) => s == base.id).length > 0;
-      if (!isBaseBeamable)
-        spirit.move(base.position);
-      spirit.energize(base);
-    },
     gatherHaulingMyBase: (spirit, star) => {
       star = star || consts_default.myStar;
       const baseStructs = spirit.sight.structures.filter((s) => s.indexOf(base.id) >= 0);
@@ -266,49 +260,6 @@
         }
       });
     },
-    gatherInfiniteChain: (spiritArr) => {
-      spiritArr = spiritArr.sort((a, b) => a.energy - b.energy);
-      spiritArr.forEach((spirit) => {
-        const isStarBeamable = geometry_default.calcDistance(spirit.position, consts_default.myStar.position) <= 200;
-        const isBaseBeamable = spirit.sight.structures.find((s) => s.indexOf(base.id) >= 0);
-        const connectionArr = spiritArr.slice(0).filter((s) => s.mark != "empty").filter((s) => spirit.sight.friends_beamable.find((s2) => s2 == s.id)).filter((s) => geometry_default.calcDistance(s.position, base.position) < geometry_default.calcDistance(spirit.position, base.position)).sort((s) => geometry_default.calcDistance(s.position, base.position) - geometry_default.calcDistance(spirit.position, base.position));
-        const connection = connectionArr.sort((a, b) => a.energy - b.energy).find((s) => {
-          if (s.energy < s.energy_capacity) {
-            return true;
-          }
-        });
-        if (spirit.energy > 0 && isBaseBeamable) {
-          spirit.energize(base);
-          spirit.energy -= spirit.size;
-          base.energy += spirit.size;
-        } else if (isStarBeamable && consts_default.myStar.energy > consts_default.desiredStarEnergy && spirit.energy < spirit.energy_capacity) {
-          spirit.energize(spirit);
-          consts_default.myStar.energy -= spirit.size;
-          spirit.energy += spirit.size;
-        } else if (spirit.energy > 0 && connection && connection.energy < connection.energy_capacity) {
-          spirit.energize(connection);
-          spirit.energy -= spirit.size;
-          connection.energy += spirit.size;
-          spirit.connection = connection;
-        }
-      });
-      spiritArr.forEach((spirit) => {
-        const isStarBeamable = geometry_default.calcDistance(spirit.position, consts_default.myStar.position) <= 200;
-        const isBaseBeamable = spirit.sight.structures.find((s) => s.indexOf(base.id) >= 0);
-        if (spirit.energy == spirit.energy_capacity) {
-          spirit.set_mark("full");
-        } else if (spirit.energy == 0) {
-          spirit.set_mark("empty");
-        } else if (!spirit.mark) {
-          spirit.set_mark("empty");
-        }
-        if (!isBaseBeamable && spirit.mark == "full") {
-          spirit.move(consts_default.CLOSE_TO_BASE_POS);
-        } else if (!isStarBeamable && spirit.mark == "empty") {
-          spirit.move(consts_default.CLOSE_TO_STAR_POS);
-        }
-      });
-    },
     gatherChainHauling: (spiritArr, connectionArr) => {
       const safeEnergy = 0;
       spiritArr = spiritArr.sort((a, b) => a.energy - b.energy);
@@ -358,11 +309,46 @@
         }
       });
     },
-    gatherStar: (spiritArr, connectionArr) => {
+    gatherInfiniteChain: (spiritArr) => {
+      spiritArr = spiritArr.sort((a, b) => a.energy - b.energy);
       spiritArr.forEach((spirit) => {
-        spirit.move(consts_default.CLOSE_TO_STAR_POS);
-        if (consts_default.myStar.energy > consts_default.desiredStarEnergy && spirit.energy < spirit.energy_capacity) {
+        const isStarBeamable = geometry_default.calcDistance(spirit.position, consts_default.myStar.position) <= 200;
+        const isBaseBeamable = spirit.sight.structures.find((s) => s.indexOf(base.id) >= 0);
+        const connectionArr = spiritArr.slice(0).filter((s) => s.mark != "empty").filter((s) => spirit.sight.friends_beamable.find((s2) => s2 == s.id)).filter((s) => geometry_default.calcDistance(s.position, base.position) < geometry_default.calcDistance(spirit.position, base.position)).sort((s) => geometry_default.calcDistance(s.position, base.position) - geometry_default.calcDistance(spirit.position, base.position));
+        const connection = connectionArr.sort((a, b) => a.energy - b.energy).find((s) => {
+          if (s.energy < s.energy_capacity) {
+            return true;
+          }
+        });
+        if (spirit.energy > 0 && isBaseBeamable) {
+          spirit.energize(base);
+          spirit.energy -= spirit.size;
+          base.energy += spirit.size;
+        } else if (isStarBeamable && consts_default.myStar.energy > consts_default.desiredStarEnergy && spirit.energy < spirit.energy_capacity) {
           spirit.energize(spirit);
+          consts_default.myStar.energy -= spirit.size;
+          spirit.energy += spirit.size;
+        } else if (spirit.energy > 0 && connection && connection.energy < connection.energy_capacity) {
+          spirit.energize(connection);
+          spirit.energy -= spirit.size;
+          connection.energy += spirit.size;
+          spirit.connection = connection;
+        }
+      });
+      spiritArr.forEach((spirit) => {
+        const isStarBeamable = geometry_default.calcDistance(spirit.position, consts_default.myStar.position) <= 200;
+        const isBaseBeamable = spirit.sight.structures.find((s) => s.indexOf(base.id) >= 0);
+        if (spirit.energy == spirit.energy_capacity) {
+          spirit.set_mark("full");
+        } else if (spirit.energy == 0) {
+          spirit.set_mark("empty");
+        } else if (!spirit.mark) {
+          spirit.set_mark("empty");
+        }
+        if (!isBaseBeamable && spirit.mark == "full") {
+          spirit.move(consts_default.CLOSE_TO_BASE_POS);
+        } else if (!isStarBeamable && spirit.mark == "empty") {
+          spirit.move(consts_default.CLOSE_TO_STAR_POS);
         }
       });
     },
@@ -407,46 +393,6 @@
           spirit.energize(connection);
           connection.energy += spirit.size;
         }
-      }
-    },
-    gatherNew: (gatherSpirits) => {
-      const firstSpirit = gatherSpirits[0];
-      firstSpirit.energize(base);
-      firstSpirit.move(consts_default.NEW_SPAWN_POS);
-      const restOfSpirits = gatherSpirits.slice(1);
-      restOfSpirits.forEach((s) => {
-        s.move(consts_default.NEW_SPAWN_POS);
-        s.merge && s.merge(firstSpirit);
-      });
-    },
-    moveWithStrategy: (spirit) => {
-      if (spirit.energy < spirit.energy_capacity) {
-        Gather.gatherClosestStar(spirit);
-        return;
-      }
-      let defendPoint;
-      defendPoint = geometry_default.calcTangentPointFromPoint(spirit, outpost, 620);
-      if (parseInt(spirit.id.split("_")[1]) % 2 == 1)
-        defendPoint = geometry_default.calcClockwiseTangentPointFromPoint(spirit, outpost, 620);
-      if (Array.isArray(defendPoint)) {
-        const seedX = 0;
-        const seedY = 0;
-        spirit.move([defendPoint[0] + seedX, defendPoint[1] + seedY]);
-      }
-    },
-    curveToStarStrategy: (spirit) => {
-      const enemyControlsOutpost = true;
-      const outpostRange = 600;
-      if (spirit.energy < spirit.energy_capacity) {
-        Gather.gatherClosestStar(spirit, [consts_default.enemyStar, star_p89]);
-        return;
-      }
-      let defendPoint;
-      defendPoint = geometry_default.calcClockwiseTangentPointFromPoint(spirit, outpost, 950);
-      if (Array.isArray(defendPoint)) {
-        const seedX = 0;
-        const seedY = 0;
-        spirit.move([defendPoint[0] + seedX, defendPoint[1] + seedY]);
       }
     },
     gatherAlwaysNearStar: (spirit, starArr) => {
@@ -602,64 +548,6 @@
         memory[spirit.id].status = "";
       }
     },
-    fightAggressive: (spirit) => {
-      if (spirit.sight.enemies_beamable.length > 0) {
-        const spiritEnemiesBeamable = spirit.sight.enemies_beamable.map((s) => spirits[s]);
-        const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = utils_default.calcClosestSpirit(spiritEnemiesBeamable, spirit);
-        if (closestEnemyToMe) {
-          spirit.energize(closestEnemyToMe);
-          if (closestDistanceToMe > 200)
-            spirit.move(closestEnemyToMe.position);
-          if (closestDistanceToMe < 200)
-            spirit.move(geometry_default.calcRunAwayPoint(spirit, closestEnemyToMe));
-        }
-      }
-    },
-    fightAggressive2: (spirit) => {
-      const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = utils_default.calcClosestSpirit(consts_default.enemyAliveSpirits, spirit);
-      if (closestEnemyToMe) {
-        const weBigger = spirit.energy / spirit.energy_capacity > closestEnemyToMe.energy / closestEnemyToMe.energy_capacity;
-        if (weBigger && closestDistanceToMe > 200) {
-          spirit.move(closestEnemyToMe.position);
-        } else if (true) {
-          spirit.move(closestEnemyToMe.position);
-        } else if (closestDistanceToMe < 200) {
-        }
-      }
-    },
-    fightAggressive3: (spiritArr) => {
-      spiritArr.forEach((spirit, idx) => {
-        const sizeIdeal = 3;
-        const buddy = spiritArr[idx - 1];
-        if (spirit.size >= sizeIdeal && spirit.energy < spirit.energy_capacity) {
-          consts_default.myShape == "circle" && spirit.divide && spirit.divide();
-        } else if (buddy && buddy.size < sizeIdeal && spirit.energy == spirit.energy_capacity) {
-          if (geometry_default.calcDistance(spirit.position, buddy.position) > 10)
-            spirit.move(buddy.position);
-          spirit.merge && spirit.merge(buddy);
-        }
-        if (spirit.size >= sizeIdeal)
-          spirit.move(enemy_base.position);
-        if (spirit.sight.enemies) {
-          const spiritEnemiesNearby = spirit.sight.enemies.map((s) => spirits[s]);
-          const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = utils_default.calcClosestSpirit(spiritEnemiesNearby, spirit);
-          if (closestEnemyToMe) {
-            const weBigger = spirit.energy / spirit.energy_capacity >= closestEnemyToMe.energy / closestEnemyToMe.energy_capacity;
-            if (!weBigger) {
-              spirit.shout("Ahh!");
-            }
-            if (weBigger && closestDistanceToMe > 450) {
-              spirit.move(closestEnemyToMe.position);
-            } else if (!weBigger && closestDistanceToMe < 300) {
-              spirit.move(geometry_default.calcRunAwayPoint(spirit, closestEnemyToMe));
-            }
-          }
-        }
-        if (spirit.energy == 0) {
-          gather_default.gatherClosestStar(spirit, [consts_default.myStar, consts_default.middleStar]);
-        }
-      });
-    },
     fightSmart: (spirit, idx) => {
       if (spirit.sight.enemies.length > 0) {
         const spiritEnemiesNearby = spirit.sight.enemies.map((s) => spirits[s]);
@@ -679,23 +567,6 @@
             if (closestDistanceToMe > 200) {
               spirit.move(geometry_default.calcPointBetweenPoints(closestEnemyToMe.position, spirit.position, consts_default.specialProximity));
             }
-          }
-        }
-      }
-    },
-    fightRunaway: (spirit) => {
-      if (spirit.sight.enemies_beamable.length > 0)
-        return;
-      if (spirit.sight.enemies) {
-        const spiritEnemiesNearby = spirit.sight.enemies.map((s) => spirits[s]);
-        const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = utils_default.calcClosestSpirit(spiritEnemiesNearby, spirit);
-        if (closestEnemyToMe) {
-          if (closestEnemyToMe.energy / closestEnemyToMe.energy_capacity > spirit.energy / spirit.energy_capacity && !(geometry_default.calcDistance(closestEnemyToMe.position, base.position) > 250)) {
-            spirit.move(geometry_default.calcRunAwayPoint(spirit, closestEnemyToMe));
-          } else if (closestEnemyToMe.energy / closestEnemyToMe.energy_capacity > spirit.energy / spirit.energy_capacity && closestDistanceToMe < 200) {
-            spirit.move(geometry_default.calcRunAwayPoint(spirit, closestEnemyToMe));
-          } else {
-            spirit.move(closestEnemyToMe.position);
           }
         }
       }

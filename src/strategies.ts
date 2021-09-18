@@ -4,10 +4,6 @@ import Gather from "./gather";
 import Geometry from "./geometry";
 
 const Strategies = {
-  spreadAttack: (spiritsArr: Spirit[]) => {
-    // move to outpost,
-    // move to outpost star
-  },
   chargeOutpostStrategy: (spirit: Spirit, idx: number) => {
     // If we control the outpost, normal moves, perhaps energize it
     // If enemy controls the outpost, avoid the range if we're too close

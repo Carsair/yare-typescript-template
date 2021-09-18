@@ -35,9 +35,9 @@ const Consts = {
   }, [0, 0]),
   MAX_GATHERERS: Utils.getMaxGather(),
   plannedEnergyObj: {},
-  desiredStarEnergy: Math.min(970, Math.pow(tick, 1.25)),
+  desiredStarEnergy: Math.min(960, Math.pow(tick, 1.25)),
   desiredStarEnergyMap: {
-    [myStar.id]: Math.min(970, Math.pow(tick, 1.25)),
+    [myStar.id]: Math.min(960, Math.pow(tick, 1.25)),
     [star_p89.id]: Math.min(900, Math.pow(Math.max(0, tick-130), 1.25)),
     [enemyStar.id]: 0
   },
