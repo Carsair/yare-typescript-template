@@ -4,7 +4,8 @@ import Gather from "./gather";
 import Geometry from "./geometry";
 
 const Strategies = {
-  chargeOutpostStrategy: (spirit: Spirit, idx: number) => {
+  chargeOutpostStrategy: (spirit: Spirit, idx: number, outpostLimit?: number) => {
+    // if (idx % 3 == 0) return;
     // If we control the outpost, normal moves, perhaps energize it
     // If enemy controls the outpost, avoid the range if we're too close
     // Eventuallly do maybe a sum of friend/enemy energy within outpost range
@@ -19,6 +20,7 @@ const Strategies = {
     const outpostStructs = spirit.sight.structures.filter((s) => s.indexOf("outpost") >= 0)
     const enemyBaseStructs = spirit.sight.structures.filter((s) => s.indexOf(enemy_base.id) >= 0)
     const canEnergizeOutpost = Geometry.calcDistance(spirit.position, outpost.position) < 200
+    outpostLimit = outpostLimit || 730
 
     if (spirit.mark == "empty") {
       return Gather.gatherClosestStar(spirit, starArr)
@@ -42,11 +44,7 @@ const Strategies = {
       return
     }
 
-    if (outpost.energy < 200) {
-      if (spirit.energy <= 1) {
-        spirit.set_mark("empty")
-        return Gather.gatherClosestStar(spirit, starArr)
-      } else {
+    if (outpost.energy < outpostLimit) {
         if (canEnergizeOutpost) {
           spirit.energy -= spirit.size
           outpost.energy += spirit.size
@@ -54,23 +52,6 @@ const Strategies = {
         } else {
           spirit.move(Consts.OUTPOST_MAINT_POS)
         }
-      }
-    } else if (outpost.energy < 725) {
-      if (spirit.energy <= 5) {
-        spirit.set_mark("empty")
-        return Gather.gatherClosestStar(spirit, starArr)
-      } else {
-        if (canEnergizeOutpost) {
-          spirit.energy -= spirit.size
-          outpost.energy += spirit.size
-          spirit.energize(outpost)
-        } else {
-          spirit.move(Consts.OUTPOST_MAINT_POS)
-        }
-      }
-    } else if (spirit.energy <= 5) {
-      spirit.set_mark("empty")
-      return Gather.gatherClosestStar(spirit, starArr)
     } else {
       spirit.move(Consts.OUTPOST_MAINT_POS)
     }
@@ -78,7 +59,7 @@ const Strategies = {
   avoidOutpostStrategy: (spirit: Spirit, idx: number) => {
     const control = (outpost as any).control
     const enemyControlsOutpost = control.indexOf("Carsair") < 0 && control != "";
-    const outpostRange = outpost.energy > 500 ? 600 : 400
+    const outpostRange = outpost.energy > 500 ? 610 : 410
     const distToOutpost = Geometry.calcDistance(spirit.position, outpost.position)
     const starArr = tick < 100 ? [Consts.myStar] : [Consts.myStar, Consts.middleStar]
 
@@ -86,15 +67,17 @@ const Strategies = {
       return Gather.gatherClosestStar(spirit, starArr)
     }
 
-    if (spirit.energy <= 3) {
+    if (spirit.energy / spirit.energy_capacity <= .31) {
       spirit.set_mark("empty")
       return Gather.gatherClosestStar(spirit, starArr)
     }
 
     // Avoidance
     if (enemyControlsOutpost) {
-      if (distToOutpost < outpostRange + 200) {
-        spirit.move(Geometry.calcTangentWithIndex(spirit, outpost, outpostRange+20, idx))
+      if (distToOutpost < outpostRange + 40) {
+        // const fakePosSpirit = {position: Geometry.calcRunAwayPoint(spirit, outpost)} as Spirit
+        // spirit.move(Geometry.calcTangentWithIndex(fakePosSpirit, outpost, outpostRange+30, idx))
+        spirit.move(Geometry.calcTangentWithIndex(spirit, outpost, outpostRange+30, idx))
       }
     }
   },
@@ -112,6 +95,18 @@ const Strategies = {
   },
   moveEnemy: (spirit: Spirit) => {
     spirit.move(enemy_base.position)
+  },
+  replenishWhenEmpty: (spirit: Spirit, idx: number) => {
+    if (spirit.mark == "empty") return;
+
+    // General movement
+    if (!idx) {
+      spirit.move(Consts.OUTPOST_MAINT_POS)
+    } else if (idx % 2 == 0) {
+      spirit.move(Consts.enemyStar.position)
+    } else if (idx % 2 == 1) {
+      spirit.move(enemy_base.position)
+    }
   },
   squareJumpEnemy: (spiritsArr: Spirit[]) => {
     const leaders = spiritsArr.slice(0,1)

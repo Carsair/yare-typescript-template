@@ -69,9 +69,9 @@ const Geometry = {
   },
   calcTangentWithIndex: (spirit: Entity, avoidEntity: Entity, radius: number, idx: number) => {
     if (idx % 2 == 1) {
-      return Geometry.calcClockwiseTangentPointFromPoint(spirit, avoidEntity, radius)
-    } else {
       return Geometry.calcTangentPointFromPoint(spirit, avoidEntity, radius)
+    } else {
+      return Geometry.calcClockwiseTangentPointFromPoint(spirit, avoidEntity, radius)
     }
   }
 }

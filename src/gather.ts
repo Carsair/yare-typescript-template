@@ -46,6 +46,10 @@ const Gather = {
       spirit.energy += spirit.size
     }
 
+    if (isStarBeamable && star.energy <= desiredStarEnergy && spirit.energy < spirit.energy_capacity) {
+      spirit.shout("not enough")
+    }
+
     if (spirit.energy == spirit.energy_capacity) {
       spirit.set_mark("full")
     } else if (spirit.energy == 0) {
@@ -61,10 +65,10 @@ const Gather = {
     }
 
     if (baseStructs.length == 0 && spirit.mark == "full") {
-      // spirit.shout("full"+spirit.id)
+      spirit.shout("full"+spirit.id)
       spirit.move(base.position)
     } else if (!isStarBeamable && spirit.mark == "empty") {
-      // spirit.shout("empty"+spirit.id)
+      spirit.shout("empty"+spirit.id)
       spirit.move(star.position)
     }
   },
@@ -114,17 +118,19 @@ const Gather = {
         spirit.energize(spirit)
         Consts.myStar.energy -= spirit.size
         spirit.energy += spirit.size
-      } else if (isStarBeamable && Consts.myStar.energy <= Consts.desiredStarEnergy && spirit.energy > 0) {
-        // Optimization to energize star
-        spirit.energize(Consts.myStar)
-        spirit.energy -= spirit.size
-        Consts.myStar.energy += spirit.size;
       } else if (connection) {
         spirit.energize(connection)
         spirit.energy -= spirit.size
         connection.energy += spirit.size;
         // ((connection as any).hasConnection = true)
       }
+      // else if (isStarBeamable && Consts.myStar.energy <= Consts.desiredStarEnergy && spirit.energy > 0) {
+      //   // Optimization to energize star
+      //   spirit.shout("Dumping in")
+      //   spirit.energize(Consts.myStar)
+      //   spirit.energy -= spirit.size
+      //   Consts.myStar.energy += spirit.size;
+      // }
 
       if (spirit.energy == spirit.energy_capacity) {
         spirit.set_mark("full")
@@ -283,11 +289,13 @@ const Gather = {
       }
       return acc
     }, null as any)
-    const desiredStarEnergy = Consts.desiredStarEnergyMap[availableStar.id]
-    if (availableStar && availableStar.energy > desiredStarEnergy && spirit.energy < spirit.energy_capacity) {
-      spirit.energize(spirit)
-      availableStar.energy -= spirit.size
-      spirit.energy += spirit.size
+    if (availableStar) {
+      const desiredStarEnergy = Consts.desiredStarEnergyMap[availableStar.id]
+      if (availableStar.energy > desiredStarEnergy && spirit.energy < spirit.energy_capacity) {
+        spirit.energize(spirit)
+        availableStar.energy -= spirit.size
+        spirit.energy += spirit.size
+      }
     }
   },
 
@@ -295,6 +303,10 @@ const Gather = {
   gatherClosestStar: (spirit: Spirit, starArr?: Star[]) => {
     if (spirit.energy == 0) {
       spirit.set_mark("empty")
+    }
+    if (spirit.energy == spirit.energy_capacity) {
+      spirit.set_mark("ready")
+      return;
     }
     let closestDist = null as null|number;
     starArr = starArr ? starArr : [Consts.myStar, star_p89, Consts.enemyStar]
@@ -327,8 +339,17 @@ const Gather = {
       //   spirit.energy -= spirit.size
       // }
     }
-    if (spirit.energy == spirit.energy_capacity) {
-      spirit.set_mark("ready")
+
+  },
+
+  gatherWhenEmpty: (spirit: Spirit, limit?: number, starArr?: Star[]) => {
+    limit = limit || 0;
+    // if (spirit.size > 1) console.log('spirit.energy / spirit.energy_capacity: ', spirit.energy / spirit.energy_capacity, spirit.energy / spirit.energy_capacity <= limit);
+    if (spirit.energy / spirit.energy_capacity <= limit) {
+      spirit.set_mark("empty")
+    }
+    if (spirit.mark == "empty") {
+      Gather.gatherClosestStar(spirit, starArr)
     }
   }
 }

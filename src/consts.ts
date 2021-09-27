@@ -1,5 +1,4 @@
 import Geometry from './geometry'
-import Utils from './utils';
 
 const isSouthSpawn = base.position[0] === 2600
 const myStar = isSouthSpawn ? star_a1c : star_zxq;
@@ -33,11 +32,10 @@ const Consts = {
     }
     return acc
   }, [0, 0]),
-  MAX_GATHERERS: Utils.getMaxGather(),
   plannedEnergyObj: {},
-  desiredStarEnergy: Math.min(960, Math.pow(tick, 1.25)),
+  desiredStarEnergy: Math.min(900, Math.pow(tick, 1.30)),
   desiredStarEnergyMap: {
-    [myStar.id]: Math.min(960, Math.pow(tick, 1.25)),
+    [myStar.id]: Math.min(900, Math.pow(tick, 1.25)),
     [star_p89.id]: Math.min(900, Math.pow(Math.max(0, tick-130), 1.25)),
     [enemyStar.id]: 0
   },

@@ -18,8 +18,7 @@ const Fight = {
 
   fightBaseEmergency: (spirit: Spirit) => {
     if (spirit.mark == "empty") {
-      const starArr = tick < 100 ? [Consts.myStar] : [Consts.myStar, Consts.middleStar]
-      return Gather.gatherClosestStar(spirit, starArr)
+      return
     }
 
     const baseEnemies = base.sight.enemies
@@ -30,34 +29,23 @@ const Fight = {
 
     if (baseEnemies.length > 0) {
       console.log("Base emergency!");
+      if (spirit.energy / spirit.energy_capacity <= .31) {
+        spirit.set_mark("empty")
+        return Gather.gatherClosestStar(spirit, [Consts.myStar])
+      }
 
       const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = Utils.calcClosestSpirit(baseEnemies, spirit);
-
       if (closestEnemyToMe) {
         if (closestDistanceToMe > 200) {
-          spirit.move(closestEnemyToMe.position);
+          spirit.move(Geometry.calcPointBetweenPoints(closestEnemyToMe.position, spirit.position, Consts.specialProximity))
         }
       }
-      if (spirit.energy == 0) {
-        memory[spirit.id] = memory[spirit.id] || {}
-        memory[spirit.id].status = "depleted"
-      }
-      if (memory[spirit.id] && memory[spirit.id].status == "depleted") {
-        Gather.gatherClosestStar(spirit, [Consts.myStar])
-
-        if (spirit.energy == spirit.energy_capacity) {
-          memory[spirit.id].status = ""
-        }
-      }
-    } else if (memory[spirit.id] && memory[spirit.id].status) {
-      memory[spirit.id].status = ""
     }
   },
 
   fightForTheStar: (spirit: Spirit) => {
     if (spirit.mark == "empty") {
-      const starArr = tick < 100 ? [Consts.myStar] : [Consts.myStar, Consts.middleStar]
-      return Gather.gatherClosestStar(spirit, starArr)
+      return
     }
 
     const starAttackers = Consts.enemyAliveSpirits.filter((es) => {
@@ -65,80 +53,66 @@ const Fight = {
     })
     if (starAttackers.length > 0) {
       console.log("Star under attack!");
+      if (spirit.energy / spirit.energy_capacity <= .31) {
+        spirit.set_mark("empty")
+        return Gather.gatherClosestStar(spirit, [Consts.myStar])
+      }
       const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = Utils.calcClosestSpirit(starAttackers, spirit);
       if (closestEnemyToMe) {
         if (closestDistanceToMe > 200) {
-          spirit.move(closestEnemyToMe.position);
+          spirit.move(Geometry.calcPointBetweenPoints(closestEnemyToMe.position, spirit.position, Consts.specialProximity))
         }
       }
-      if (spirit.energy == 0) {
-        memory[spirit.id] = memory[spirit.id] || {}
-        memory[spirit.id].status = "depleted"
-      }
-      if (memory[spirit.id] && memory[spirit.id].status == "depleted") {
-        Gather.gatherClosestStar(spirit, [Consts.myStar])
-
-        if (spirit.energy == spirit.energy_capacity) {
-          memory[spirit.id].status = ""
-        }
-      }
-    } else if (memory[spirit.id] && memory[spirit.id].status) {
-      memory[spirit.id].status = ""
     }
   },
 
   fightForTheBase: (spirit: Spirit) => {
     if (spirit.mark == "empty") {
-      const starArr = tick < 100 ? [Consts.myStar] : [Consts.myStar, Consts.middleStar]
-      return Gather.gatherClosestStar(spirit, starArr)
+      return
     }
+
     const baseEnemies = Consts.enemyAliveSpirits.filter((es) => {
-      return Geometry.calcDistance(es.position, base.position) < 400
+      return Geometry.calcDistance(es.position, base.position) < 500
     })
     if (baseEnemies.length > 0) {
       console.log("Base under attack!");
+      if (spirit.energy / spirit.energy_capacity <= .31) {
+        spirit.set_mark("empty")
+        return Gather.gatherClosestStar(spirit, [Consts.myStar])
+      }
       const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = Utils.calcClosestSpirit(baseEnemies, spirit);
       if (closestEnemyToMe) {
         if (closestDistanceToMe > 200) {
-          spirit.move(closestEnemyToMe.position);
+          spirit.move(Geometry.calcPointBetweenPoints(closestEnemyToMe.position, spirit.position, Consts.specialProximity))
         }
       }
-      if (spirit.energy == 0) {
-        memory[spirit.id] = memory[spirit.id] || {}
-        memory[spirit.id].status = "depleted"
-      }
-      if (memory[spirit.id] && memory[spirit.id].status == "depleted") {
-        Gather.gatherClosestStar(spirit, [Consts.myStar])
-
-        if (spirit.energy == spirit.energy_capacity) {
-          memory[spirit.id].status = ""
-        }
-      }
-    } else if (memory[spirit.id] && memory[spirit.id].status) {
-      memory[spirit.id].status = ""
     }
   },
 
-  fightSmart: (spirit: Spirit, idx: number) => {
+  fightSmart: (spirit: Spirit, idx: number, strategyLevel?: number) => {
+    if (spirit.mark == "empty") {
+      return
+    }
+
     if (spirit.sight.enemies.length > 0) {
       const spiritEnemiesNearby = spirit.sight.enemies.map((s) => spirits[s]);
       const { closestSpirit: closestEnemyToMe, closestDistance: closestDistanceToMe } = Utils.calcClosestSpirit(spiritEnemiesNearby, spirit);
       if (closestEnemyToMe && spirit.energy > 0) {
-        const weFuller = (spirit.energy / spirit.energy_capacity) > (closestEnemyToMe.energy / closestEnemyToMe.energy_capacity)
-        const weBigger = spirit.energy >= closestEnemyToMe.energy
-        const weOverHalf = spirit.energy / spirit.energy_capacity
-        const shouldAggress = Consts.enemyShape == 'circle' ? weFuller : weBigger
+        const aggressionOptions = [
+          (spirit.energy / spirit.energy_capacity) >= (closestEnemyToMe.energy / closestEnemyToMe.energy_capacity), // 0 not safe
+          (spirit.energy / spirit.energy_capacity) > (closestEnemyToMe.energy / closestEnemyToMe.energy_capacity), // 1 safe
+          spirit.energy > closestEnemyToMe.energy, // 2 even safer
+          spirit.energy == spirit.energy_capacity, // 3 only when max
+          spirit.energy > 5, // 4 something aggressive
+          spirit.energy > 1, // 5 something aggressive
+          false // 6 always run
+        ]
+        const aggressionLevel = strategyLevel !== undefined ? strategyLevel : 1
 
-        // We bigger to be more avoidance, weFuller to go for it vs bigger shapes
-        // if (false) {
-        if (!(weOverHalf)) {
-
-        // if (!(weFuller)) {
-        // if (!(weBigger)) {
-        // if (!(shouldAggress)) {
+        if (!(aggressionOptions[aggressionLevel])) {
           if (closestDistanceToMe < 200) {
             spirit.move(Geometry.calcRunAwayPoint(spirit, closestEnemyToMe))
-          } else if (closestDistanceToMe < 300) {
+          } else if (closestDistanceToMe < 280) {
             spirit.move(Geometry.calcTangentWithIndex(spirit, closestEnemyToMe, 240, idx))
           }
         } else {
