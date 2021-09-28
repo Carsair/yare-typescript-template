@@ -21,24 +21,25 @@ const shouldwatch = flags.includes("-w") || flags.includes("--watch");
 const shouldsync = flags.includes("-s") || flags.includes("--sync");
 const switchacc = flags.includes("-a") || flags.includes("--switch-acc");
 const nominify = flags.includes("-nm") || flags.includes("--no-minify");
-const custommain = // sorry for ugly code, this is so terrible
-  (
-    flags.find((arg) => {
-      return (arg.match(/(?<=--main=).+/) ?? [])[0] ?? false;
-    }) ?? ""
-  ).replace("--main=", "") || false;
+const custommain = flags.reduce((acc, arg) => {
+  const match = arg.match(/--main=(.+)/);
+  if (match && match[1]) acc = match[1];
+  return acc;
+}, null);
 
-// const usingts = fs.existsSync(path.join(__dirname, "src/main.ts"));
-const usingjs = fs.existsSync(path.join(__dirname, "src/main.js"));
-
-let mainfile = usingjs ? "src/main.js" : "src/main.ts";
-
-custommain && (mainfile = custommain);
-
-if (!fs.existsSync(mainfile)) {
+let mainfile;
+if (custommain && fs.existsSync(custommain)) {
+  mainfile = custommain
+} else if (fs.existsSync(path.join(__dirname, "src/main.ts"))) {
+  mainfile = path.join(__dirname, "src/main.ts")
+} else if (fs.existsSync(path.join(__dirname, "src/main.js"))) {
+  mainfile = path.join(__dirname, "src/main.js")
+} else {
   console.log("You don't have a main file".red.underline);
   process.exit(0);
 }
+
+console.log(`Building from file: ${mainfile}`.green);
 
 const esbuildConfig = {
   entryPoints: [mainfile],
